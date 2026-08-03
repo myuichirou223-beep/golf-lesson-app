@@ -5,6 +5,14 @@
 const GolfApp = (function () {
   'use strict';
 
+  // Hard Wipe All Old Browser LocalStorage Cache Immediately
+  try {
+    if (!localStorage.getItem('exgolf_hard_wipe_executed_v999')) {
+      localStorage.clear();
+      localStorage.setItem('exgolf_hard_wipe_executed_v999', 'true');
+    }
+  } catch (e) {}
+
   // ─── Constants ───
 
   const STORAGE_KEYS = {
@@ -605,12 +613,12 @@ const GolfApp = (function () {
   }
 
   function clearAllData() {
-    localStorage.removeItem(STORAGE_KEYS.SALES);
-    localStorage.removeItem(STORAGE_KEYS.LESSONS);
-    localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
+    localStorage.clear();
     saveSales([]);
     saveLessons([]);
     setData(STORAGE_KEYS.CUSTOMERS, []);
+    localStorage.setItem('exgolf_hard_wipe_executed_v999', 'true');
+    generateSampleData();
   }
 
   // ─── Formatting ───
