@@ -11,6 +11,35 @@
 
   // ─── KPI Cards ───
 
+  function setCardValue(cardId, valueText, changePercent, isStaff, isHiddenForStaff = true) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const valEl = card.querySelector('.kpi-value');
+    const changeEl = card.querySelector('.kpi-change');
+
+    if (valEl) {
+      valEl.textContent = (isStaff && isHiddenForStaff) ? '****' : valueText;
+    }
+
+    if (changeEl) {
+      if (isStaff && isHiddenForStaff) {
+        changeEl.style.display = 'none';
+      } else if (changePercent === null || changePercent === undefined) {
+        changeEl.textContent = '前月比 —';
+        changeEl.className = 'kpi-change neutral';
+      } else if (changePercent > 0) {
+        changeEl.textContent = `↑ +${changePercent}% 前月比`;
+        changeEl.className = 'kpi-change positive';
+      } else if (changePercent < 0) {
+        changeEl.textContent = `↓ ${changePercent}% 前月比`;
+        changeEl.className = 'kpi-change negative';
+      } else {
+        changeEl.textContent = '→ 0% 前月比';
+        changeEl.className = 'kpi-change neutral';
+      }
+    }
+  }
+
   function updateKPICards(year, month, userRole) {
     const isStaff = userRole === 'staff';
     const stats = G.calcMonthlyStats(year, month);
@@ -18,38 +47,12 @@
     const prevMonthDate = new Date(year, month - 1, 1);
     const prevStats = G.calcMonthlyStats(prevMonthDate.getFullYear(), prevMonthDate.getMonth());
 
-    const totalEl = document.getElementById('kpiTotalSales');
-    const totalChangeEl = document.getElementById('kpiTotalSalesChange');
-    if (totalEl) {
-      totalEl.textContent = isStaff ? '****' : G.formatCurrency(stats.total);
-    }
-    if (totalChangeEl) {
-      if (isStaff) {
-        totalChangeEl.style.display = 'none';
-      } else {
-        const change = G.calcChange(stats.total, prevStats.total);
-        totalChangeEl.style.display = '';
-        totalChangeEl.className = `kpi-change ${change >= 0 ? 'up' : 'down'}`;
-        totalChangeEl.textContent = `${change >= 0 ? '+' : ''}${change}% 前月比`;
-      }
-    }
-
-    const lessonEl = document.getElementById('kpiLessonCount');
-    const lessonChangeEl = document.getElementById('kpiLessonCountChange');
-    if (lessonEl) lessonEl.textContent = `${stats.lessonCount}回`;
-    if (lessonChangeEl) {
-      const change = G.calcChange(stats.lessonCount, prevStats.lessonCount);
-      lessonChangeEl.className = `kpi-change ${change >= 0 ? 'up' : 'down'}`;
-      lessonChangeEl.textContent = `${change >= 0 ? '+' : ''}${change}% 前月比`;
-    }
-
-    const coachEl = document.getElementById('kpiActiveCoaches');
-    if (coachEl) coachEl.textContent = `${stats.coachCount}名`;
-
-    const revEl = document.getElementById('kpiEstimatedRevenue');
-    if (revEl) {
-      revEl.textContent = isStaff ? '****' : G.formatCurrency(stats.lessonRevenue);
-    }
+    setCardValue('kpiMonthlyFee', G.formatCurrency(stats.monthlyFee), G.calcChange(stats.monthlyFee, prevStats.monthlyFee), isStaff);
+    setCardValue('kpiTicket', G.formatCurrency(stats.ticketSales), G.calcChange(stats.ticketSales, prevStats.ticketSales), isStaff);
+    setCardValue('kpiPractice', G.formatCurrency(stats.practiceSales || 0), G.calcChange(stats.practiceSales || 0, prevStats.practiceSales || 0), isStaff);
+    setCardValue('kpiOther', G.formatCurrency(stats.otherSales), G.calcChange(stats.otherSales, prevStats.otherSales), isStaff);
+    setCardValue('kpiTotal', G.formatCurrency(stats.total), G.calcChange(stats.total, prevStats.total), isStaff);
+    setCardValue('kpiLessons', `${stats.lessonCount}回`, G.calcChange(stats.lessonCount, prevStats.lessonCount), isStaff, false);
   }
 
   // ─── Charts & Tables ───
