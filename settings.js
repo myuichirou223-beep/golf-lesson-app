@@ -177,14 +177,10 @@
   // ─── Data Reset ───
 
   function handleResetData() {
-    Object.values(G.STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
-
-    G.generateSampleData();
+    G.clearAllData();
     G.closeModal('resetConfirmModal');
     renderMenuList();
-    G.showToast('データをリセットしました');
+    G.showToast('すべての実績データを消去し、実運用状態に初期化しました');
   }
 
   // ─── Init ───

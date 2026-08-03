@@ -1,7 +1,7 @@
 /* ============================================================
-   Golf Lesson App — Shared Data Layer & Utilities (v11)
+   Golf Lesson App — Shared Data Layer & Utilities (v12 Production Mode)
    ============================================================
-   All data is stored locally in the browser's LocalStorage & synced.
+   Clean state for production environment without demo transactions.
    ============================================================ */
 
 const GolfApp = (function () {
@@ -15,7 +15,7 @@ const GolfApp = (function () {
     COACHES: 'golf_app_coaches',
     MENUS: 'golf_app_menus',
     CUSTOMERS: 'golf_app_customers',
-    INITIALIZED: 'golf_app_initialized_v7',
+    INITIALIZED: 'golf_app_initialized_prod_v1',
   };
 
   const MAX_LESSONS_PER_MONTH = 40;
@@ -52,19 +52,6 @@ const GolfApp = (function () {
     { name: '金城 大輔', specialties: ['10回チケット', '法人30'], bio: '初心者指導が得意' },
     { name: '宮城 あゆみ', specialties: ['月2回コース', '5回チケット'], bio: 'レディースレッスン担当' },
     { name: '上原 拓也', specialties: ['法人60', '20回チケット'], bio: 'コースマネジメント指導' },
-  ];
-
-  const DEFAULT_CUSTOMERS = [
-    '佐藤 健太',
-    '田中 裕子',
-    '鈴木 一郎',
-    '高橋 美咲',
-    '渡辺 剛',
-    '伊藤 順子',
-    '山本 大輝',
-    '中村 さくら',
-    '小林 誠',
-    '加藤 直樹',
   ];
 
   // ─── Data Layer ───
@@ -554,10 +541,6 @@ const GolfApp = (function () {
       if (settingsLink && user.role !== 'admin') {
         settingsLink.style.display = 'none';
       }
-      const dashboardLink = nav.querySelector('a[href="index.html"]');
-      if (dashboardLink && user.role === 'coach') {
-        // Coach view defaults to coaches page
-      }
     }
 
     // Insert User Badge in Header
@@ -579,6 +562,52 @@ const GolfApp = (function () {
         CloudAuth.logout();
       });
     }
+  }
+
+  // ─── Production Clean State Initialization ───
+
+  function generateSampleData() {
+    // Clear legacy test data keys if present
+    ['golf_app_initialized', 'golf_app_initialized_v7'].forEach(k => localStorage.removeItem(k));
+
+    if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
+
+    // Create menus master
+    const menus = DEFAULT_MENUS.map(m => ({
+      id: generateId(),
+      name: m.name,
+      price: m.price,
+      active: true,
+      createdAt: new Date().toISOString().split('T')[0],
+    }));
+    saveMenus(menus);
+
+    // Create coaches master
+    const coaches = DEFAULT_COACHES.map(c => ({
+      id: generateId(),
+      name: c.name,
+      specialties: c.specialties,
+      bio: c.bio,
+      registeredAt: new Date().toISOString().split('T')[0],
+      active: true,
+    }));
+    saveCoaches(coaches);
+
+    // Empty transactions for production clean slate
+    saveSales([]);
+    saveLessons([]);
+    setData(STORAGE_KEYS.CUSTOMERS, []);
+
+    localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+  }
+
+  function clearAllData() {
+    localStorage.removeItem(STORAGE_KEYS.SALES);
+    localStorage.removeItem(STORAGE_KEYS.LESSONS);
+    localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
+    saveSales([]);
+    saveLessons([]);
+    setData(STORAGE_KEYS.CUSTOMERS, []);
   }
 
   // ─── Formatting ───
@@ -736,141 +765,6 @@ const GolfApp = (function () {
     Chart.defaults.scale.ticks.padding = 8;
   }
 
-  // ─── Sample Data Generation ───
-
-  function generateSampleData() {
-    if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
-
-    // Create menus
-    const menus = DEFAULT_MENUS.map(m => ({
-      id: generateId(),
-      name: m.name,
-      price: m.price,
-      active: true,
-      createdAt: '2025-04-01',
-    }));
-    saveMenus(menus);
-
-    // Create coaches
-    const coaches = DEFAULT_COACHES.map(c => ({
-      id: generateId(),
-      name: c.name,
-      specialties: c.specialties,
-      bio: c.bio,
-      registeredAt: '2025-04-01',
-      active: true,
-    }));
-    saveCoaches(coaches);
-
-    // Create default customers
-    setData(STORAGE_KEYS.CUSTOMERS, DEFAULT_CUSTOMERS);
-
-    const sales = [];
-    const lessons = [];
-    const now = new Date();
-    const coachNames = coaches.map(c => c.name);
-    const startTimes = ['09:00','09:30','10:00','10:30','11:00','11:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00'];
-    const pMethods = Object.keys(PAYMENT_METHODS);
-
-    for (let monthOffset = 5; monthOffset >= 0; monthOffset--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - monthOffset, 1);
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      // Monthly fee sales
-      const feeEntries = 3 + Math.floor(Math.random() * 3);
-      for (let i = 0; i < feeEntries; i++) {
-        const day = 1 + Math.floor(Math.random() * Math.min(daysInMonth, 28));
-        const customer = DEFAULT_CUSTOMERS[Math.floor(Math.random() * DEFAULT_CUSTOMERS.length)];
-        const pm = pMethods[Math.floor(Math.random() * pMethods.length)];
-        sales.push({
-          id: generateId(),
-          date: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-          type: 'monthly_fee',
-          paymentMethod: pm,
-          customerName: customer,
-          amount: 50000 + Math.floor(Math.random() * 100000),
-          description: '月会費',
-        });
-      }
-
-      // Ticket sales
-      const ticketEntries = 4 + Math.floor(Math.random() * 5);
-      for (let i = 0; i < ticketEntries; i++) {
-        const day = 1 + Math.floor(Math.random() * Math.min(daysInMonth, 28));
-        const amounts = [6000, 6500, 6800, 10000];
-        const customer = DEFAULT_CUSTOMERS[Math.floor(Math.random() * DEFAULT_CUSTOMERS.length)];
-        const pm = pMethods[Math.floor(Math.random() * pMethods.length)];
-        sales.push({
-          id: generateId(),
-          date: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-          type: 'ticket',
-          paymentMethod: pm,
-          customerName: customer,
-          amount: amounts[Math.floor(Math.random() * amounts.length)],
-          description: 'チケット購入',
-        });
-      }
-
-      // Other sales
-      const otherEntries = 2 + Math.floor(Math.random() * 4);
-      const otherItems = [
-        { desc: '練習利用25分', amt: 1430 },
-        { desc: '練習利用50分', amt: 2200 },
-        { desc: 'グリップ交換', amt: 3500 },
-        { desc: 'ゴルフボール（1ダース）', amt: 5800 },
-      ];
-      for (let i = 0; i < otherEntries; i++) {
-        const day = 1 + Math.floor(Math.random() * Math.min(daysInMonth, 28));
-        const customer = DEFAULT_CUSTOMERS[Math.floor(Math.random() * DEFAULT_CUSTOMERS.length)];
-        const item = otherItems[Math.floor(Math.random() * otherItems.length)];
-        const pm = pMethods[Math.floor(Math.random() * pMethods.length)];
-        sales.push({
-          id: generateId(),
-          date: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-          type: 'other',
-          paymentMethod: pm,
-          customerName: customer,
-          amount: item.amt,
-          description: item.desc,
-        });
-      }
-
-      // Lessons
-      coachNames.forEach(coach => {
-        const lessonCount = 12 + Math.floor(Math.random() * 20);
-        for (let i = 0; i < lessonCount; i++) {
-          const day = 1 + Math.floor(Math.random() * Math.min(daysInMonth, 28));
-          const menu = menus[Math.floor(Math.random() * menus.length)];
-          const st = startTimes[Math.floor(Math.random() * startTimes.length)];
-          const [h, m] = st.split(':').map(Number);
-          const durMin = menu.name.includes('25分') ? 25 : menu.name.includes('50分') ? 50 : 60;
-          const endH = h + Math.floor((m + durMin) / 60);
-          const endM = (m + durMin) % 60;
-          const et = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-          const customer = DEFAULT_CUSTOMERS[Math.floor(Math.random() * DEFAULT_CUSTOMERS.length)];
-
-          lessons.push({
-            id: generateId(),
-            date: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-            startTime: st,
-            endTime: et,
-            coachName: coach,
-            customerName: customer,
-            menuId: menu.id,
-            menuName: menu.name,
-            menuPrice: menu.price,
-          });
-        }
-      });
-    }
-
-    saveSales(sales);
-    saveLessons(lessons);
-    localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
-  }
-
   // ─── Public API ───
 
   return {
@@ -894,7 +788,7 @@ const GolfApp = (function () {
     getCoachLessonHistory, calcCoachAllTimeStats,
 
     exportCustomData, exportSalesCSV, exportLessonsCSV, exportPDF, setupExportModalHandler,
-    renderHeaderUserBlock,
+    renderHeaderUserBlock, clearAllData,
 
     formatCurrency, formatCompact, formatDate, formatFullDate, formatTimeRange,
 
