@@ -223,12 +223,58 @@
     }).join('');
   }
 
+  function openEditSalesModal(id) {
+    const sale = G.getSalesById(id);
+    if (!sale) return;
+
+    document.getElementById('editSalesId').value = sale.id;
+    document.getElementById('editSalesDate').value = sale.date;
+    document.getElementById('editSalesCustomer').value = sale.customerName || '';
+    document.getElementById('editSalesType').value = sale.type || 'other';
+    document.getElementById('editSalesPaymentMethod').value = sale.paymentMethod || 'cash';
+    document.getElementById('editSalesAmount').value = sale.amount || 0;
+    document.getElementById('editSalesDescription').value = sale.description || sale.menuNames?.join(', ') || sale.menuName || '';
+
+    G.openModal('editSalesModal');
+  }
+
+  function handleSalesEdit(e) {
+    e.preventDefault();
+    const id = document.getElementById('editSalesId').value;
+    const date = document.getElementById('editSalesDate').value;
+    const customerName = document.getElementById('editSalesCustomer').value.trim();
+    const type = document.getElementById('editSalesType').value;
+    const paymentMethod = document.getElementById('editSalesPaymentMethod').value;
+    const amount = Number(document.getElementById('editSalesAmount').value) || 0;
+    const description = document.getElementById('editSalesDescription').value.trim();
+
+    if (!id || !date) return;
+
+    if (customerName) {
+      G.saveCustomerName(customerName);
+    }
+
+    G.updateSales(id, {
+      date,
+      customerName,
+      type,
+      paymentMethod,
+      amount,
+      description,
+      menuName: description,
+    });
+
+    G.closeModal('editSalesModal');
+    refreshDashboard();
+    G.showToast('売上データを更新しました');
+  }
+
   function renderSalesDetailTable(year, month, isStaff) {
     const tbody = document.querySelector('#salesDetailTable tbody');
     if (!tbody) return;
 
     if (isStaff) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-text">店舗アカウントでは売上明細は非表示です</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-text">店舗アカウントでは売上明細は非表示です</div></div></td></tr>`;
       return;
     }
 
@@ -237,7 +283,7 @@
       .sort((a, b) => b.date.localeCompare(a.date));
 
     if (monthlySales.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-text">選択月の売上データがまだ登録されていません</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-text">選択月の売上データがまだ登録されていません</div></div></td></tr>`;
       return;
     }
 
@@ -251,8 +297,27 @@
           <td>${menuText}</td>
           <td><span class="role-badge badge-staff">${payText}</span></td>
           <td class="text-right highlight-value">${G.formatCurrency(s.amount)}</td>
+          <td class="text-center">
+            <button class="btn btn-outline btn-xs edit-sale-btn" data-id="${s.id}">編集</button>
+            <button class="btn btn-outline btn-xs delete-sale-btn" data-id="${s.id}" style="color:#C62828; border-color:#FFCDD2;">削除</button>
+          </td>
         </tr>`;
     }).join('');
+
+    // Attach click events
+    tbody.querySelectorAll('.edit-sale-btn').forEach(btn => {
+      btn.addEventListener('click', () => openEditSalesModal(btn.dataset.id));
+    });
+
+    tbody.querySelectorAll('.delete-sale-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (confirm('この売上データを削除してもよろしいですか？')) {
+          G.deleteSales(btn.dataset.id);
+          refreshDashboard();
+          G.showToast('売上データを削除しました');
+        }
+      });
+    });
   }
 
   // ─── Refresh ───
@@ -478,9 +543,11 @@
     document.getElementById('addLessonBtn')?.addEventListener('click', openLessonModalHandler);
     document.getElementById('openLessonModalBtn')?.addEventListener('click', openLessonModalHandler);
     document.getElementById('closeSalesModal')?.addEventListener('click', () => G.closeModal('salesModal'));
+    document.getElementById('closeEditSalesModal')?.addEventListener('click', () => G.closeModal('editSalesModal'));
     document.getElementById('closeLessonModal')?.addEventListener('click', () => G.closeModal('lessonModal'));
 
     document.getElementById('salesForm')?.addEventListener('submit', handleSalesSubmit);
+    document.getElementById('editSalesForm')?.addEventListener('submit', handleSalesEdit);
     document.getElementById('lessonForm')?.addEventListener('submit', handleLessonSubmit);
 
     G.setupModalClose();

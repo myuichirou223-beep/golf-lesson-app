@@ -114,6 +114,25 @@ const GolfApp = (function () {
   function getSales() { return getData(STORAGE_KEYS.SALES); }
   function saveSales(data) { setData(STORAGE_KEYS.SALES, data); }
 
+  function getSalesById(id) {
+    return getSales().find(s => s.id === id) || null;
+  }
+
+  function updateSales(id, updates) {
+    const sales = getSales();
+    const index = sales.findIndex(s => s.id === id);
+    if (index === -1) return false;
+    sales[index] = { ...sales[index], ...updates };
+    saveSales(sales);
+    return true;
+  }
+
+  function deleteSales(id) {
+    const sales = getSales().filter(s => s.id !== id);
+    saveSales(sales);
+    return true;
+  }
+
   // Lessons
   function getLessons() { return getData(STORAGE_KEYS.LESSONS); }
   function saveLessons(data) { setData(STORAGE_KEYS.LESSONS, data); }
@@ -885,7 +904,7 @@ const GolfApp = (function () {
     getDisplayPrice,
 
     generateId,
-    getSales, saveSales,
+    getSales, saveSales, getSalesById, updateSales, deleteSales,
     getLessons, saveLessons,
     getCoaches, saveCoaches, getCoachNames, getCoachById,
     addCoach, updateCoach, deleteCoach,

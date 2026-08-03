@@ -129,6 +129,7 @@
                 <th>メニュー</th>
                 <th>支払い方法</th>
                 <th class="text-right">金額</th>
+                <th class="text-center" style="width: 110px;">操作</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -277,6 +278,54 @@
           <select id="lessonMenu" required></select>
         </div>
         <button type="submit" class="btn btn-primary btn-full">登録する</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Edit Sales Modal ===== -->
+  <div class="modal-overlay" id="editSalesModal" role="dialog" aria-modal="true" aria-labelledby="editSalesModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="editSalesModalTitle">売上データの編集</h3>
+        <button class="modal-close" id="closeEditSalesModal" aria-label="閉じる">&times;</button>
+      </div>
+      <form id="editSalesForm" class="modal-form">
+        <input type="hidden" id="editSalesId">
+        <div class="form-group">
+          <label for="editSalesDate">日付</label>
+          <input type="date" id="editSalesDate" required>
+        </div>
+        <div class="form-group">
+          <label for="editSalesCustomer">顧客名</label>
+          <input type="text" id="editSalesCustomer" list="customerDatalist" placeholder="例: 佐藤 健太" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="editSalesType">売上種別</label>
+          <select id="editSalesType" required>
+            <option value="monthly_fee">月会費売上</option>
+            <option value="ticket">チケット売上</option>
+            <option value="practice">練習利用売上</option>
+            <option value="other">その他売上（物販・体験等）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editSalesPaymentMethod">支払い方法</label>
+          <select id="editSalesPaymentMethod" required>
+            <option value="cash">現金</option>
+            <option value="transfer">振込</option>
+            <option value="credit">クレジットカード</option>
+            <option value="paypay">電子マネー（PayPay）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editSalesAmount">金額（税別 / 円）</label>
+          <input type="number" id="editSalesAmount" min="0" required placeholder="例: 10000">
+        </div>
+        <div class="form-group">
+          <label for="editSalesDescription">対象メニュー・備考</label>
+          <input type="text" id="editSalesDescription" placeholder="例: 都度払い, 5回チケット">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">変更を保存する</button>
       </form>
     </div>
   </div>
