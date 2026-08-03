@@ -1,7 +1,7 @@
 /* ============================================================
-   Golf Lesson App — Shared Data Layer & Utilities (v12 Production Mode)
+   Golf Lesson App — Shared Data Layer & Utilities (v13 Forced Clean State)
    ============================================================
-   Clean state for production environment without demo transactions.
+   Completely wipes all historical demo data across all client browsers.
    ============================================================ */
 
 const GolfApp = (function () {
@@ -16,6 +16,7 @@ const GolfApp = (function () {
     MENUS: 'golf_app_menus',
     CUSTOMERS: 'golf_app_customers',
     INITIALIZED: 'golf_app_initialized_prod_v1',
+    FORCE_CLEAN: 'golf_app_force_clean_v10',
   };
 
   const MAX_LESSONS_PER_MONTH = 40;
@@ -535,7 +536,6 @@ const GolfApp = (function () {
     const nav = document.querySelector('.header-nav');
     const headerRight = document.querySelector('.header-right');
 
-    // Filter nav links based on role
     if (nav) {
       const settingsLink = nav.querySelector('a[href="settings.html"]');
       if (settingsLink && user.role !== 'admin') {
@@ -543,9 +543,8 @@ const GolfApp = (function () {
       }
     }
 
-    // Insert User Badge in Header
     if (headerRight && !document.getElementById('headerUserBox')) {
-      const badgeText = user.role === 'admin' ? '管理者' : '店舗';
+      const badgeText = user.role === 'admin' ? '1. 管理者' : '2. 店舗';
       const badgeClass = user.role === 'admin' ? 'badge-admin' : 'badge-staff';
 
       const userBox = document.createElement('div');
@@ -564,11 +563,19 @@ const GolfApp = (function () {
     }
   }
 
-  // ─── Production Clean State Initialization ───
+  // ─── Forced Clean Reset for Production ───
 
   function generateSampleData() {
-    // Clear legacy test data keys if present
-    ['golf_app_initialized', 'golf_app_initialized_v7'].forEach(k => localStorage.removeItem(k));
+    // If forced clean has not run on this browser yet, wipe ALL sales, lessons, and customers
+    if (!localStorage.getItem(STORAGE_KEYS.FORCE_CLEAN)) {
+      localStorage.removeItem(STORAGE_KEYS.SALES);
+      localStorage.removeItem(STORAGE_KEYS.LESSONS);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
+      saveSales([]);
+      saveLessons([]);
+      setData(STORAGE_KEYS.CUSTOMERS, []);
+      localStorage.setItem(STORAGE_KEYS.FORCE_CLEAN, 'true');
+    }
 
     if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
 
@@ -593,7 +600,7 @@ const GolfApp = (function () {
     }));
     saveCoaches(coaches);
 
-    // Empty transactions for production clean slate
+    // Empty transactions
     saveSales([]);
     saveLessons([]);
     setData(STORAGE_KEYS.CUSTOMERS, []);
