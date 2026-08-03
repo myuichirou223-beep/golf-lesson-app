@@ -371,17 +371,21 @@
       const daySales = allSales.filter(s => s.date === dateStr);
       const daySalesTotal = daySales.reduce((sum, s) => sum + s.amount, 0);
 
-      // Lessons for this day
+      // Lessons for this day (grouped by Coach)
       const dayLessons = allLessons.filter(l => l.date === dateStr);
-      const dayLessonsCount = dayLessons.length;
+      const coachLessonMap = {};
+      dayLessons.forEach(l => {
+        const coachShort = (l.coachName || '未指定').split(' ')[0];
+        coachLessonMap[coachShort] = (coachLessonMap[coachShort] || 0) + 1;
+      });
 
       let badgesHtml = '';
       if (!isStaff && daySalesTotal > 0) {
         badgesHtml += `<span class="cal-badge-sales" title="売上: ${G.formatCurrency(daySalesTotal)}">${G.formatCurrency(daySalesTotal)}</span>`;
       }
-      if (dayLessonsCount > 0) {
-        badgesHtml += `<span class="cal-badge-lessons" title="レッスン: ${dayLessonsCount}件">レッスン ${dayLessonsCount}件</span>`;
-      }
+      Object.entries(coachLessonMap).forEach(([coachShort, count]) => {
+        badgesHtml += `<span class="cal-badge-lessons" title="${coachShort}: ${count}件">${coachShort} ${count}件</span>`;
+      });
 
       cellsHtml += `
         <div class="cal-cell ${dayClass} ${isToday}" data-date="${dateStr}">
@@ -413,12 +417,15 @@
       cell.addEventListener('click', () => {
         const dateStr = cell.dataset.date;
         const daySales = allSales.filter(s => s.date === dateStr);
-        const dayLessons = allLessons.filter(l => l.date === dateStr);
-        const dayTotal = daySales.reduce((sum, s) => sum + s.amount, 0);
+        const coachBreakdown = {};
+        dayLessons.forEach(l => {
+          coachBreakdown[l.coachName] = (coachBreakdown[l.coachName] || 0) + 1;
+        });
+        const coachBreakdownStr = Object.entries(coachBreakdown).map(([name, count]) => `${name}: ${count}件`).join(', ');
 
         let msg = `${dateStr} の実績:\n`;
         msg += `・売上合計: ${isStaff ? '非表示' : G.formatCurrency(dayTotal)} (${daySales.length}件)\n`;
-        msg += `・レッスン実施: ${dayLessons.length}件`;
+        msg += `・レッスン実施: ${dayLessons.length}件 ${coachBreakdownStr ? `(${coachBreakdownStr})` : ''}`;
         alert(msg);
       });
     });
