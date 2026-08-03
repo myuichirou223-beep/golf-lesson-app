@@ -1,5 +1,5 @@
 /* ============================================================
-   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v18 Lesson Prices & Trial)
+   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v19 Fixed Double Tax Calculation)
    ============================================================ */
 
 const GolfApp = (function () {
@@ -12,9 +12,9 @@ const GolfApp = (function () {
     LESSONS: 'exgolflab_lessons_prod_v1',
     COACHES: 'exgolflab_coaches_prod_v1',
     MENUS: 'exgolflab_menus_prod_v3',
-    LESSON_MENUS: 'exgolflab_lesson_menus_prod_v3',
+    LESSON_MENUS: 'exgolflab_lesson_menus_prod_v4',
     CUSTOMERS: 'exgolflab_customers_prod_v1',
-    INITIALIZED: 'exgolflab_initialized_prod_v3',
+    INITIALIZED: 'exgolflab_initialized_prod_v4',
     TAX_MODE: 'exgolflab_tax_mode_v1',
   };
 
@@ -51,9 +51,9 @@ const GolfApp = (function () {
     { name: '体験レッスン（入会サービス）', price: 0 },
   ];
 
-  // Lesson Performance Menus (Per-lesson valuation price for Coach Stats)
+  // Lesson Performance Menus (Exact Per-lesson valuation price for Coach Stats)
   const DEFAULT_LESSON_MENUS = [
-    { name: '都度払い（1回）', price: 10000 },
+    { name: '都度払い', price: 10000 },
     { name: '5回チケット', price: 6800 },
     { name: '10回チケット', price: 6500 },
     { name: '20回チケット', price: 6000 },
@@ -69,7 +69,7 @@ const GolfApp = (function () {
 
   // Official Coaches for eXGOLFLAB
   const DEFAULT_COACHES = [
-    { name: '宮國 雄一朗', specialties: ['都度払い（1回）', '5回チケット', '10回チケット', '体験レッスン'], bio: 'ヘッドコーチ' },
+    { name: '宮國 雄一朗', specialties: ['都度払い', '5回チケット', '10回チケット', '体験レッスン'], bio: 'ヘッドコーチ' },
     { name: '与那覇 未来', specialties: ['月1回コース', '月2回コース', '20回チケット', '体験レッスン'], bio: 'インストラクター' },
   ];
 
@@ -213,36 +213,14 @@ const GolfApp = (function () {
 
   // Lesson Performance Menus (Per-lesson unit prices)
   function getLessonMenus() {
-    let menus = getData(STORAGE_KEYS.LESSON_MENUS);
-    if (menus.length === 0) {
-      menus = DEFAULT_LESSON_MENUS.map(m => ({
-        id: generateId(),
-        name: m.name,
-        price: m.price,
-        active: true,
-        createdAt: new Date().toISOString().split('T')[0],
-      }));
-      saveLessonMenus(menus);
-    } else {
-      let updated = false;
-      DEFAULT_LESSON_MENUS.forEach(defM => {
-        const existing = menus.find(m => m.name === defM.name);
-        if (!existing) {
-          menus.push({
-            id: generateId(),
-            name: defM.name,
-            price: defM.price,
-            active: true,
-            createdAt: new Date().toISOString().split('T')[0],
-          });
-          updated = true;
-        } else if (existing.price !== defM.price && existing.active) {
-          existing.price = defM.price;
-          updated = true;
-        }
-      });
-      if (updated) saveLessonMenus(menus);
-    }
+    let menus = DEFAULT_LESSON_MENUS.map(m => ({
+      id: generateId(),
+      name: m.name,
+      price: m.price,
+      active: true,
+      createdAt: new Date().toISOString().split('T')[0],
+    }));
+    saveLessonMenus(menus);
     return menus;
   }
   function saveLessonMenus(data) { setData(STORAGE_KEYS.LESSON_MENUS, data); }
@@ -795,15 +773,13 @@ const GolfApp = (function () {
     select.innerHTML = '';
 
     const isIncl = isTaxInclusiveMode();
-
-    // If populating lessonMenu, use getActiveLessonMenus (per-lesson unit prices)
     const menus = selectId === 'lessonMenu' ? getActiveLessonMenus() : getActiveMenus();
 
     menus.forEach(menu => {
       const displayP = isIncl ? calcTaxAmount(menu.price) : menu.price;
       const opt = document.createElement('option');
       opt.value = menu.id;
-      opt.textContent = `${menu.name}（${formatCurrency(displayP)}${isIncl ? '税込' : '税別'}）`;
+      opt.textContent = `${menu.name}（¥${displayP.toLocaleString('ja-JP')}${isIncl ? '税込' : '税別'}）`;
       select.appendChild(opt);
     });
   }
