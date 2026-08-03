@@ -1,5 +1,5 @@
 /* ============================================================
-   Settings Page — Logic (v11 with RBAC)
+   Settings Page — Logic (v12 with Account Credential Editing)
    ============================================================ */
 
 (function () {
@@ -7,6 +7,50 @@
 
   const G = GolfApp;
   let deleteTargetId = null;
+
+  // ─── Account Settings ───
+
+  function populateAccountForms() {
+    const users = CloudAuth.getUsers();
+
+    const adminUser = users.find(u => u.role === 'admin');
+    if (adminUser) {
+      document.getElementById('adminEmailInput').value = adminUser.email;
+      document.getElementById('adminPasswordInput').value = adminUser.password;
+    }
+
+    const shopUser = users.find(u => u.role === 'shop');
+    if (shopUser) {
+      document.getElementById('shopEmailInput').value = shopUser.email;
+      document.getElementById('shopPasswordInput').value = shopUser.password;
+    }
+  }
+
+  function handleAdminAccountSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('adminEmailInput').value;
+    const password = document.getElementById('adminPasswordInput').value;
+
+    const result = CloudAuth.updateUserCredentials('admin', email, password);
+    if (!result.success) {
+      G.showToast(result.message);
+      return;
+    }
+    G.showToast('管理者アカウントの認証情報を更新しました');
+  }
+
+  function handleShopAccountSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('shopEmailInput').value;
+    const password = document.getElementById('shopPasswordInput').value;
+
+    const result = CloudAuth.updateUserCredentials('shop', email, password);
+    if (!result.success) {
+      G.showToast(result.message);
+      return;
+    }
+    G.showToast('店舗アカウントの認証情報を更新しました');
+  }
 
   // ─── Menu List ───
 
@@ -146,14 +190,17 @@
   // ─── Init ───
 
   function init() {
-    // Only Admin can access settings
     const currentUser = CloudAuth.requireAuth(['admin']);
     if (!currentUser) return;
 
     G.generateSampleData();
     G.renderHeaderUserBlock();
 
+    populateAccountForms();
     renderMenuList();
+
+    document.getElementById('adminAccountForm')?.addEventListener('submit', handleAdminAccountSubmit);
+    document.getElementById('shopAccountForm')?.addEventListener('submit', handleShopAccountSubmit);
 
     document.getElementById('addMenuBtn')?.addEventListener('click', () => G.openModal('addMenuModal'));
     document.getElementById('closeAddMenuModal')?.addEventListener('click', () => G.closeModal('addMenuModal'));

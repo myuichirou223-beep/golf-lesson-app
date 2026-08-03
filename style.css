@@ -1407,9 +1407,37 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* --- Account Settings Cards --- */
+.account-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+.account-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-lg);
+}
+
+.account-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xs);
+}
+
+@media (max-width: 768px) {
+  .account-settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* --- Data Actions --- */
 .data-actions {
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
 }
-

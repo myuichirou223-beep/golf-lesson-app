@@ -31,6 +31,52 @@
   <!-- ===== Main Content ===== -->
   <main class="dashboard">
 
+    <!-- Account Credentials Section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <h2 class="section-title">ログインアカウント設定</h2>
+      </div>
+      <p class="section-description">「1. 管理者」および「2. 店舗」アカウントのログイン用メールアドレスとパスワードを変更できます。</p>
+
+      <div class="account-settings-grid">
+        <!-- Admin Account -->
+        <div class="account-card">
+          <div class="account-card-header">
+            <span class="role-badge badge-admin">1. 管理者アカウント</span>
+          </div>
+          <form id="adminAccountForm" class="modal-form" style="margin-top: var(--space-md);">
+            <div class="form-group">
+              <label for="adminEmailInput">メールアドレス</label>
+              <input type="email" id="adminEmailInput" required autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label for="adminPasswordInput">パスワード</label>
+              <input type="text" id="adminPasswordInput" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-outline btn-sm">管理者アカウントを保存</button>
+          </form>
+        </div>
+
+        <!-- Shop Account -->
+        <div class="account-card">
+          <div class="account-card-header">
+            <span class="role-badge badge-staff">2. 店舗アカウント</span>
+          </div>
+          <form id="shopAccountForm" class="modal-form" style="margin-top: var(--space-md);">
+            <div class="form-group">
+              <label for="shopEmailInput">メールアドレス</label>
+              <input type="email" id="shopEmailInput" required autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label for="shopPasswordInput">パスワード</label>
+              <input type="text" id="shopPasswordInput" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-outline btn-sm">店舗アカウントを保存</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- Menu Items Section -->
     <section class="settings-section">
       <div class="section-header">
@@ -66,11 +112,11 @@
       <form id="addMenuForm" class="modal-form">
         <div class="form-group">
           <label for="menuName">メニュー名</label>
-          <input type="text" id="menuName" required placeholder="例: 5回チケット">
+          <input type="text" id="menuName" required placeholder="例: 月1回コース">
         </div>
         <div class="form-group">
-          <label for="menuPrice">単価（円）</label>
-          <input type="number" id="menuPrice" min="0" step="100" required placeholder="例: 6800">
+          <label for="menuPrice">価格（円）</label>
+          <input type="number" id="menuPrice" min="0" step="100" required placeholder="例: 8000">
         </div>
         <button type="submit" class="btn btn-primary btn-full">追加する</button>
       </form>
@@ -91,7 +137,7 @@
           <input type="text" id="editMenuName" required>
         </div>
         <div class="form-group">
-          <label for="editMenuPrice">単価（円）</label>
+          <label for="editMenuPrice">価格（円）</label>
           <input type="number" id="editMenuPrice" min="0" step="100" required>
         </div>
         <button type="submit" class="btn btn-primary btn-full">更新する</button>
