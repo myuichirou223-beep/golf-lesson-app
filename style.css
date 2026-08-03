@@ -484,15 +484,20 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  padding: 16px;
   opacity: 0;
   visibility: hidden;
-  transition: all var(--duration) var(--ease);
+  transition: all 0.25s var(--ease);
 }
 
 .modal-overlay.active {
@@ -504,10 +509,14 @@ body {
   background: var(--white);
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 440px;
+  max-width: 520px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--shadow-lg);
   transform: translateY(16px) scale(0.98);
   transition: transform 0.3s var(--ease);
+  overflow: hidden;
 }
 
 .modal-overlay.active .modal {
@@ -520,6 +529,7 @@ body {
   justify-content: space-between;
   padding: var(--space-lg);
   border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -554,6 +564,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(88vh - 65px);
 }
 
 .form-group {
