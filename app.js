@@ -85,7 +85,16 @@
           {
             label: 'チケット',
             data: trend.map(t => t.ticketSales),
-            backgroundColor: '#888888',
+            backgroundColor: '#555555',
+            borderRadius: 4,
+            borderSkipped: false,
+            barPercentage: 0.7,
+            categoryPercentage: 0.65,
+          },
+          {
+            label: '練習利用',
+            data: trend.map(t => t.practiceSales || 0),
+            backgroundColor: '#1A6B3C',
             borderRadius: 4,
             borderSkipped: false,
             barPercentage: 0.7,
@@ -196,7 +205,7 @@
     if (!tbody) return;
 
     if (isStaff) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-text">閲覧権限が制限されています</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-text">閲覧権限が制限されています</div></div></td></tr>`;
       return;
     }
 
@@ -207,6 +216,7 @@
           <td>${t.label}</td>
           <td class="text-right">${G.formatCurrency(t.monthlyFee)}</td>
           <td class="text-right">${G.formatCurrency(t.ticketSales)}</td>
+          <td class="text-right">${G.formatCurrency(t.practiceSales || 0)}</td>
           <td class="text-right">${G.formatCurrency(t.otherSales)}</td>
           <td class="text-right ${isLatest ? 'highlight-value' : ''}">${G.formatCurrency(t.total)}</td>
         </tr>`;
@@ -257,6 +267,7 @@
     const selectedNames = [];
     let hasMonthly = false;
     let hasTicket = false;
+    let hasPractice = false;
 
     checkboxes.forEach(cb => {
       const card = cb.closest('.menu-checkbox-card');
@@ -267,7 +278,8 @@
         selectedNames.push(name);
 
         if (name.includes('コース') || name.includes('月会費')) hasMonthly = true;
-        if (name.includes('チケット') || name.includes('都度払い') || name.includes('法人')) hasTicket = true;
+        else if (name.includes('チケット') || name.includes('都度払い') || name.includes('法人')) hasTicket = true;
+        else if (name.includes('練習利用') || name.includes('練習')) hasPractice = true;
       }
     });
 
@@ -296,6 +308,7 @@
     if (typeSelect) {
       if (hasMonthly) typeSelect.value = 'monthly_fee';
       else if (hasTicket) typeSelect.value = 'ticket';
+      else if (hasPractice) typeSelect.value = 'practice';
       else if (selectedNames.length > 0) typeSelect.value = 'other';
     }
   }

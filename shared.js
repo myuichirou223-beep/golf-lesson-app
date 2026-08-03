@@ -1,5 +1,5 @@
 /* ============================================================
-   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v16 Tax & Multi-Menu)
+   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v17 Practice Type)
    ============================================================ */
 
 const GolfApp = (function () {
@@ -30,6 +30,7 @@ const GolfApp = (function () {
   const SALES_TYPES = {
     monthly_fee: '月会費売上',
     ticket: 'チケット売上',
+    practice: '練習利用売上',
     other: 'その他売上',
   };
 
@@ -271,6 +272,7 @@ const GolfApp = (function () {
 
     const monthlyFee = sales.filter(s => s.type === 'monthly_fee').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
     const ticketSales = sales.filter(s => s.type === 'ticket').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
+    const practiceSales = sales.filter(s => s.type === 'practice').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
     const otherSales = sales.filter(s => s.type === 'other').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
     const uniqueCoaches = new Set(lessons.map(l => l.coachName));
     const lessonRevenue = lessons.reduce((sum, l) => sum + (isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0)), 0);
@@ -278,8 +280,9 @@ const GolfApp = (function () {
     return {
       monthlyFee,
       ticketSales,
+      practiceSales,
       otherSales,
-      total: monthlyFee + ticketSales + otherSales,
+      total: monthlyFee + ticketSales + practiceSales + otherSales,
       lessonCount: lessons.length,
       coachCount: uniqueCoaches.size,
       lessonRevenue,
@@ -485,23 +488,24 @@ const GolfApp = (function () {
       showToast(`コーチ別集計 (${periodLabel}) をCSV出力しました`);
 
     } else if (dataType === 'monthly_summary') {
-      const headers = ['年月', isIncl ? '月会費売上(税込)' : '月会費売上(税別)', isIncl ? 'チケット売上(税込)' : 'チケット売上(税別)', isIncl ? 'その他売上(税込)' : 'その他売上(税別)', isIncl ? '売上合計(税込)' : '売上合計(税別)'];
+      const headers = ['年月', isIncl ? '月会費売上(税込)' : '月会費売上(税別)', isIncl ? 'チケット売上(税込)' : 'チケット売上(税別)', isIncl ? '練習利用売上(税込)' : '練習利用売上(税別)', isIncl ? 'その他売上(税込)' : 'その他売上(税別)', isIncl ? '売上合計(税込)' : '売上合計(税別)'];
       const rows = [headers];
 
       const monthlyMap = {};
       filteredSales.forEach(s => {
         const ym = s.date.slice(0, 7);
         const price = isIncl ? calcTaxAmount(s.amount) : s.amount;
-        if (!monthlyMap[ym]) monthlyMap[ym] = { monthlyFee: 0, ticket: 0, other: 0, total: 0 };
+        if (!monthlyMap[ym]) monthlyMap[ym] = { monthlyFee: 0, ticket: 0, practice: 0, other: 0, total: 0 };
         if (s.type === 'monthly_fee') monthlyMap[ym].monthlyFee += price;
         else if (s.type === 'ticket') monthlyMap[ym].ticket += price;
+        else if (s.type === 'practice') monthlyMap[ym].practice += price;
         else if (s.type === 'other') monthlyMap[ym].other += price;
         monthlyMap[ym].total += price;
       });
 
       Object.keys(monthlyMap).sort().reverse().forEach(ym => {
         const m = monthlyMap[ym];
-        rows.push([ym, m.monthlyFee, m.ticket, m.other, m.total]);
+        rows.push([ym, m.monthlyFee, m.ticket, m.practice, m.other, m.total]);
       });
 
       downloadCSV(`eXGOLFLAB_月別売上集計_${periodLabel}${taxSuffix}.csv`, rows);
