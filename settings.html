@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>設定 | ゴルフレッスン</title>
+  <meta name="description" content="メニュー項目の管理・設定ページ">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="header">
+    <div class="header-left">
+      <h1>実績管理</h1>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link">ダッシュボード</a>
+      <a href="coaches.html" class="nav-link">コーチ管理</a>
+      <a href="settings.html" class="nav-link active">設定</a>
+    </nav>
+    <div class="header-right">
+      <button class="btn btn-primary" id="addMenuBtn">＋ メニュー追加</button>
+    </div>
+  </header>
+
+  <!-- ===== Main Content ===== -->
+  <main class="dashboard">
+
+    <!-- Menu Items Section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <h2 class="section-title">メニュー項目管理</h2>
+        <span class="coach-count" id="menuCount">0件</span>
+      </div>
+      <p class="section-description">レッスン登録時に選択するメニュー項目を管理できます。</p>
+
+      <div class="menu-list" id="menuList">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Data Management Section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <h2 class="section-title">データ管理</h2>
+      </div>
+      <p class="section-description">ローカルに保存されているデータの管理を行います。</p>
+      <div class="data-actions">
+        <button class="btn btn-outline" id="resetDataBtn">サンプルデータをリセット</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Add Menu Modal ===== -->
+  <div class="modal-overlay" id="addMenuModal" role="dialog" aria-modal="true" aria-labelledby="addMenuModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="addMenuModalTitle">メニュー追加</h3>
+        <button class="modal-close" id="closeAddMenuModal" aria-label="閉じる">&times;</button>
+      </div>
+      <form id="addMenuForm" class="modal-form">
+        <div class="form-group">
+          <label for="menuName">メニュー名</label>
+          <input type="text" id="menuName" required placeholder="例: 5回チケット">
+        </div>
+        <div class="form-group">
+          <label for="menuPrice">単価（円）</label>
+          <input type="number" id="menuPrice" min="0" step="100" required placeholder="例: 6800">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">追加する</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Edit Menu Modal ===== -->
+  <div class="modal-overlay" id="editMenuModal" role="dialog" aria-modal="true" aria-labelledby="editMenuModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="editMenuModalTitle">メニュー編集</h3>
+        <button class="modal-close" id="closeEditMenuModal" aria-label="閉じる">&times;</button>
+      </div>
+      <form id="editMenuForm" class="modal-form">
+        <input type="hidden" id="editMenuId">
+        <div class="form-group">
+          <label for="editMenuName">メニュー名</label>
+          <input type="text" id="editMenuName" required>
+        </div>
+        <div class="form-group">
+          <label for="editMenuPrice">単価（円）</label>
+          <input type="number" id="editMenuPrice" min="0" step="100" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">更新する</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Delete Confirm Modal ===== -->
+  <div class="modal-overlay" id="deleteConfirmModal" role="dialog" aria-modal="true">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3>メニュー削除確認</h3>
+        <button class="modal-close" id="closeDeleteModal" aria-label="閉じる">&times;</button>
+      </div>
+      <div class="modal-form">
+        <p class="confirm-text" id="deleteConfirmText">このメニューを削除しますか？</p>
+        <div class="confirm-actions">
+          <button class="btn btn-outline" id="cancelDeleteBtn">キャンセル</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn">削除する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Reset Confirm Modal ===== -->
+  <div class="modal-overlay" id="resetConfirmModal" role="dialog" aria-modal="true">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3>データリセット確認</h3>
+        <button class="modal-close" id="closeResetModal" aria-label="閉じる">&times;</button>
+      </div>
+      <div class="modal-form">
+        <p class="confirm-text">すべてのデータをリセットし、サンプルデータを再生成しますか？<br>この操作は元に戻せません。</p>
+        <div class="confirm-actions">
+          <button class="btn btn-outline" id="cancelResetBtn">キャンセル</button>
+          <button class="btn btn-danger" id="confirmResetBtn">リセットする</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Toast ===== -->
+  <div class="toast" id="toast"></div>
+
+  <script src="cloud.js"></script>
+  <script src="shared.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

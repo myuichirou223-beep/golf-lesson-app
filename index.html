@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>実績管理ダッシュボード | ゴルフレッスン</title>
+  <meta name="description" content="ゴルフレッスンの売上・実績をリアルタイムに管理するダッシュボード">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="header">
+    <div class="header-left">
+      <h1>実績管理</h1>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link active">ダッシュボード</a>
+      <a href="coaches.html" class="nav-link">コーチ管理</a>
+      <a href="settings.html" class="nav-link">設定</a>
+    </nav>
+    <div class="header-right">
+      <select id="monthSelector" class="month-selector" aria-label="表示月を選択"></select>
+      <button class="btn btn-outline" id="openExportModalBtn">データ出力 ▾</button>
+      <button class="btn btn-primary" id="addSalesBtn">＋ 売上登録</button>
+      <button class="btn btn-outline" id="addLessonBtn">＋ レッスン登録</button>
+    </div>
+  </header>
+
+  <!-- ===== Shared Datalist for Customers ===== -->
+  <datalist id="customerDatalist"></datalist>
+
+  <!-- ===== Dashboard ===== -->
+  <main class="dashboard">
+
+    <!-- KPI Cards -->
+    <section class="kpi-section" aria-label="主要指標">
+      <div class="kpi-card" id="kpiMonthlyFee">
+        <span class="kpi-label">月会費売上</span>
+        <span class="kpi-value">--</span>
+        <span class="kpi-change neutral">--</span>
+      </div>
+      <div class="kpi-card" id="kpiTicket">
+        <span class="kpi-label">チケット売上</span>
+        <span class="kpi-value">--</span>
+        <span class="kpi-change neutral">--</span>
+      </div>
+      <div class="kpi-card" id="kpiOther">
+        <span class="kpi-label">その他売上</span>
+        <span class="kpi-value">--</span>
+        <span class="kpi-change neutral">--</span>
+      </div>
+      <div class="kpi-card highlight" id="kpiTotal">
+        <span class="kpi-label">売上合計</span>
+        <span class="kpi-value">--</span>
+        <span class="kpi-change neutral">--</span>
+      </div>
+      <div class="kpi-card" id="kpiLessons">
+        <span class="kpi-label">レッスン実施数</span>
+        <span class="kpi-value">--</span>
+        <span class="kpi-change neutral">--</span>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="charts-section" aria-label="グラフ">
+      <div class="chart-card">
+        <h2 class="card-title">売上推移（過去6ヶ月）</h2>
+        <canvas id="salesChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h2 class="card-title">コーチ別レッスン数</h2>
+        <canvas id="coachChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Tables -->
+    <section class="tables-section" aria-label="詳細データ">
+      <div class="table-card">
+        <h2 class="card-title">コーチ別実績</h2>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="coachTable">
+            <thead>
+              <tr>
+                <th>コーチ名</th>
+                <th class="text-right">レッスン数</th>
+                <th>稼働率</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="table-card">
+        <h2 class="card-title">月別売上サマリー</h2>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="salesTable">
+            <thead>
+              <tr>
+                <th>月</th>
+                <th class="text-right">月会費</th>
+                <th class="text-right">チケット</th>
+                <th class="text-right">その他</th>
+                <th class="text-right">合計</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Export Modal ===== -->
+  <div class="modal-overlay" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="exportModalTitle">データ出力設定</h3>
+        <button class="modal-close" id="closeExportModal" aria-label="閉じる">&times;</button>
+      </div>
+      <form id="exportForm" class="modal-form">
+        <div class="form-group">
+          <label for="exportDataType">1. 出力するデータ内容</label>
+          <select id="exportDataType" required>
+            <option value="sales">売上明細データ</option>
+            <option value="lessons">レッスン実績データ</option>
+            <option value="coach_summary">コーチ別集計データ</option>
+            <option value="monthly_summary">月別売上サマリー</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="exportPeriodType">2. 対象期間</label>
+          <select id="exportPeriodType" required>
+            <option value="selected_month">選択中の月（ダッシュボード選択月）</option>
+            <option value="current_month">今月</option>
+            <option value="all">全期間</option>
+            <option value="custom">指定期間（日付範囲）</option>
+          </select>
+        </div>
+        <div class="form-row" id="customDateRangeRow" style="display:none;">
+          <div class="form-group">
+            <label for="exportStartDate">開始日</label>
+            <input type="date" id="exportStartDate">
+          </div>
+          <div class="form-group">
+            <label for="exportEndDate">終了日</label>
+            <input type="date" id="exportEndDate">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="exportFormat">3. ファイル形式</label>
+          <select id="exportFormat" required>
+            <option value="csv">CSVファイル (.csv / UTF-8)</option>
+            <option value="pdf">PDFファイル / 印刷 (.pdf)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">データを書き出す</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Sales Modal ===== -->
+  <div class="modal-overlay" id="salesModal" role="dialog" aria-modal="true" aria-labelledby="salesModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="salesModalTitle">売上登録</h3>
+        <button class="modal-close" id="closeSalesModal" aria-label="閉じる">&times;</button>
+      </div>
+      <form id="salesForm" class="modal-form">
+        <div class="form-group">
+          <label for="salesDate">日付</label>
+          <input type="date" id="salesDate" required>
+        </div>
+        <div class="form-group">
+          <label for="salesCustomer">顧客名（新規入力または候補から選択）</label>
+          <input type="text" id="salesCustomer" list="customerDatalist" placeholder="例: 佐藤 健太" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="salesType">種別</label>
+          <select id="salesType" required>
+            <option value="monthly_fee">月会費売上</option>
+            <option value="ticket">チケット売上</option>
+            <option value="other">その他売上（物販・イベント・グリップ交換等）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="salesPaymentMethod">支払い方法</label>
+          <select id="salesPaymentMethod" required>
+            <option value="cash">現金</option>
+            <option value="transfer">振込</option>
+            <option value="credit">クレジットカード</option>
+            <option value="paypay">電子マネー（PayPay）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="salesAmount">金額（円）</label>
+          <input type="number" id="salesAmount" min="0" step="100" required placeholder="例: 50000">
+        </div>
+        <div class="form-group">
+          <label for="salesDescription">備考・内容</label>
+          <input type="text" id="salesDescription" placeholder="例: グリップ交換代、ボール代など（任意）">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">登録する</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Lesson Modal ===== -->
+  <div class="modal-overlay" id="lessonModal" role="dialog" aria-modal="true" aria-labelledby="lessonModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="lessonModalTitle">レッスン実績登録</h3>
+        <button class="modal-close" id="closeLessonModal" aria-label="閉じる">&times;</button>
+      </div>
+      <form id="lessonForm" class="modal-form">
+        <div class="form-group">
+          <label for="lessonDate">日付</label>
+          <input type="date" id="lessonDate" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="lessonStartTime">開始時間</label>
+            <input type="time" id="lessonStartTime" required value="10:00">
+          </div>
+          <div class="form-group">
+            <label for="lessonEndTime">終了時間</label>
+            <input type="time" id="lessonEndTime" required value="11:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="lessonCustomer">顧客名（新規入力または候補から選択）</label>
+          <input type="text" id="lessonCustomer" list="customerDatalist" placeholder="例: 田中 裕子" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="lessonCoach">コーチ</label>
+          <select id="lessonCoach" required></select>
+        </div>
+        <div class="form-group">
+          <label for="lessonMenu">メニュー</label>
+          <select id="lessonMenu" required></select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">登録する</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Toast ===== -->
+  <div class="toast" id="toast"></div>
+
+  <script src="cloud.js"></script>
+  <script src="shared.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
