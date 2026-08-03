@@ -27,6 +27,10 @@
     <div class="header-right">
       <select id="monthSelector" class="month-selector" aria-label="表示月を選択"></select>
       <button class="btn btn-outline" id="openExportModalBtn">データ出力 ▾</button>
+      <div class="tax-toggle-group" id="taxToggleGroup" title="表示価格の税別・税込（10%）の切替">
+        <button class="tax-toggle-btn active" id="taxModeExcl">税別</button>
+        <button class="tax-toggle-btn" id="taxModeIncl">税込 (10%)</button>
+      </div>
       <button class="btn btn-primary" id="addCoachBtn">＋ コーチ登録</button>
     </div>
   </header>

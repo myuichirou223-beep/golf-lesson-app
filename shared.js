@@ -1,5 +1,5 @@
 /* ============================================================
-   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v15 Updated Prices)
+   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v16 Tax & Multi-Menu)
    ============================================================ */
 
 const GolfApp = (function () {
@@ -14,9 +14,11 @@ const GolfApp = (function () {
     MENUS: 'exgolflab_menus_prod_v2',
     CUSTOMERS: 'exgolflab_customers_prod_v1',
     INITIALIZED: 'exgolflab_initialized_prod_v2',
+    TAX_MODE: 'exgolflab_tax_mode_v1',
   };
 
   const MAX_LESSONS_PER_MONTH = 40;
+  const TAX_RATE = 0.10; // 消費税 10%
 
   const PAYMENT_METHODS = {
     cash: '現金',
@@ -31,7 +33,7 @@ const GolfApp = (function () {
     other: 'その他売上',
   };
 
-  // Official Menus & Exact Price Structure for eXGOLFLAB
+  // Official Menus (Tax-exclusive Net Prices) for eXGOLFLAB
   const DEFAULT_MENUS = [
     { name: '都度払い（1回）', price: 10000 },
     { name: '5回チケット', price: 34000 },
@@ -50,6 +52,24 @@ const GolfApp = (function () {
     { name: '宮國 雄一朗', specialties: ['都度払い（1回）', '5回チケット', '10回チケット'], bio: 'ヘッドコーチ' },
     { name: '与那覇 未来', specialties: ['月1回コース', '月2回コース', '20回チケット'], bio: 'インストラクター' },
   ];
+
+  // ─── Tax Mode Helper ───
+
+  function isTaxInclusiveMode() {
+    return localStorage.getItem(STORAGE_KEYS.TAX_MODE) === 'inclusive';
+  }
+
+  function setTaxInclusiveMode(isInclusive) {
+    localStorage.setItem(STORAGE_KEYS.TAX_MODE, isInclusive ? 'inclusive' : 'exclusive');
+  }
+
+  function calcTaxAmount(netAmount) {
+    return Math.round(netAmount * (1 + TAX_RATE));
+  }
+
+  function getDisplayPrice(netAmount) {
+    return isTaxInclusiveMode() ? calcTaxAmount(netAmount) : netAmount;
+  }
 
   // ─── Data Layer ───
 
@@ -129,7 +149,6 @@ const GolfApp = (function () {
   // Menus
   function getMenus() {
     let menus = getData(STORAGE_KEYS.MENUS);
-    // Auto update to default menus if empty or v2 initialization
     if (!localStorage.getItem(STORAGE_KEYS.INITIALIZED) || menus.length === 0) {
       menus = DEFAULT_MENUS.map(m => ({
         id: generateId(),
@@ -154,7 +173,6 @@ const GolfApp = (function () {
           });
           updated = true;
         } else if (existing.price !== defM.price && existing.active) {
-          // Update price to new structure if matched
           existing.price = defM.price;
           updated = true;
         }
@@ -249,11 +267,13 @@ const GolfApp = (function () {
     const sales = filterByMonth(getSales(), year, month);
     const lessons = filterByMonth(getLessons(), year, month);
 
-    const monthlyFee = sales.filter(s => s.type === 'monthly_fee').reduce((sum, s) => sum + s.amount, 0);
-    const ticketSales = sales.filter(s => s.type === 'ticket').reduce((sum, s) => sum + s.amount, 0);
-    const otherSales = sales.filter(s => s.type === 'other').reduce((sum, s) => sum + s.amount, 0);
+    const isIncl = isTaxInclusiveMode();
+
+    const monthlyFee = sales.filter(s => s.type === 'monthly_fee').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
+    const ticketSales = sales.filter(s => s.type === 'ticket').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
+    const otherSales = sales.filter(s => s.type === 'other').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
     const uniqueCoaches = new Set(lessons.map(l => l.coachName));
-    const lessonRevenue = lessons.reduce((sum, l) => sum + (l.menuPrice || 0), 0);
+    const lessonRevenue = lessons.reduce((sum, l) => sum + (isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0)), 0);
 
     return {
       monthlyFee,
@@ -269,6 +289,7 @@ const GolfApp = (function () {
   function calcCoachStats(year, month) {
     const lessons = filterByMonth(getLessons(), year, month);
     const stats = {};
+    const isIncl = isTaxInclusiveMode();
 
     getCoachNames().forEach(name => {
       stats[name] = { lessonCount: 0, revenue: 0 };
@@ -279,7 +300,8 @@ const GolfApp = (function () {
         stats[l.coachName] = { lessonCount: 0, revenue: 0 };
       }
       stats[l.coachName].lessonCount++;
-      stats[l.coachName].revenue += (l.menuPrice || 0);
+      const price = isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0);
+      stats[l.coachName].revenue += price;
     });
 
     return stats;
@@ -346,7 +368,8 @@ const GolfApp = (function () {
   function calcCoachAllTimeStats(coachName) {
     const lessons = getLessons().filter(l => l.coachName === coachName);
     const totalLessons = lessons.length;
-    const totalRevenue = lessons.reduce((sum, l) => sum + (l.menuPrice || 0), 0);
+    const isIncl = isTaxInclusiveMode();
+    const totalRevenue = lessons.reduce((sum, l) => sum + (isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0)), 0);
     const months = new Set(lessons.map(l => l.date.slice(0, 7)));
     return {
       totalLessons,
@@ -385,6 +408,8 @@ const GolfApp = (function () {
     let filteredSales = getSales();
     let filteredLessons = getLessons();
     let periodLabel = '全期間';
+    const isIncl = isTaxInclusiveMode();
+    const taxSuffix = isIncl ? '_税込' : '_税別';
 
     if (periodType === 'selected_month' && selectedYear !== undefined && selectedMonth !== undefined) {
       filteredSales = filterByMonth(filteredSales, selectedYear, selectedMonth);
@@ -407,24 +432,24 @@ const GolfApp = (function () {
     }
 
     if (dataType === 'sales') {
-      const headers = ['日付', '顧客名', '売上種別', '対象メニュー', '支払い方法', '金額(円)', '備考'];
+      const headers = ['日付', '顧客名', '売上種別', '対象メニュー', '支払い方法', isIncl ? '金額(税込/円)' : '金額(税別/円)', '備考'];
       const rows = [headers];
       filteredSales.sort((a, b) => b.date.localeCompare(a.date)).forEach(s => {
         rows.push([
           s.date,
           s.customerName || '',
           SALES_TYPES[s.type] || s.type,
-          s.menuName || '',
+          s.menuName || s.menuNames?.join(', ') || '',
           PAYMENT_METHODS[s.paymentMethod] || s.paymentMethod || '',
-          s.amount,
+          isIncl ? calcTaxAmount(s.amount) : s.amount,
           s.description || '',
         ]);
       });
-      downloadCSV(`eXGOLFLAB_売上明細_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_売上明細_${periodLabel}${taxSuffix}.csv`, rows);
       showToast(`売上明細 (${periodLabel}) をCSV出力しました`);
 
     } else if (dataType === 'lessons') {
-      const headers = ['日付', '開始時間', '終了時間', '顧客名', '担当コーチ', 'メニュー名', '単価(円)'];
+      const headers = ['日付', '開始時間', '終了時間', '顧客名', '担当コーチ', 'メニュー名', isIncl ? '単価(税込/円)' : '単価(税別/円)'];
       const rows = [headers];
       filteredLessons.sort((a, b) => b.date.localeCompare(a.date)).forEach(l => {
         rows.push([
@@ -434,14 +459,14 @@ const GolfApp = (function () {
           l.customerName || '',
           l.coachName || '',
           l.menuName || '',
-          l.menuPrice || 0,
+          isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0),
         ]);
       });
-      downloadCSV(`eXGOLFLAB_レッスン実績_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_レッスン実績_${periodLabel}${taxSuffix}.csv`, rows);
       showToast(`レッスン実績 (${periodLabel}) をCSV出力しました`);
 
     } else if (dataType === 'coach_summary') {
-      const headers = ['コーチ名', '実施レッスン数', '推定売上(円)'];
+      const headers = ['コーチ名', '実施レッスン数', isIncl ? '推定売上(税込/円)' : '推定売上(税別/円)'];
       const rows = [headers];
       const coachMap = {};
       getCoachNames().forEach(name => { coachMap[name] = { count: 0, revenue: 0 }; });
@@ -449,27 +474,29 @@ const GolfApp = (function () {
       filteredLessons.forEach(l => {
         if (!coachMap[l.coachName]) coachMap[l.coachName] = { count: 0, revenue: 0 };
         coachMap[l.coachName].count++;
-        coachMap[l.coachName].revenue += (l.menuPrice || 0);
+        const price = isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0);
+        coachMap[l.coachName].revenue += price;
       });
 
       Object.entries(coachMap).forEach(([name, data]) => {
         rows.push([name, data.count, data.revenue]);
       });
-      downloadCSV(`eXGOLFLAB_コーチ別集計_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_コーチ別集計_${periodLabel}${taxSuffix}.csv`, rows);
       showToast(`コーチ別集計 (${periodLabel}) をCSV出力しました`);
 
     } else if (dataType === 'monthly_summary') {
-      const headers = ['年月', '月会費売上(円)', 'チケット売上(円)', 'その他売上(円)', '売上合計(円)'];
+      const headers = ['年月', isIncl ? '月会費売上(税込)' : '月会費売上(税別)', isIncl ? 'チケット売上(税込)' : 'チケット売上(税別)', isIncl ? 'その他売上(税込)' : 'その他売上(税別)', isIncl ? '売上合計(税込)' : '売上合計(税別)'];
       const rows = [headers];
 
       const monthlyMap = {};
       filteredSales.forEach(s => {
         const ym = s.date.slice(0, 7);
+        const price = isIncl ? calcTaxAmount(s.amount) : s.amount;
         if (!monthlyMap[ym]) monthlyMap[ym] = { monthlyFee: 0, ticket: 0, other: 0, total: 0 };
-        if (s.type === 'monthly_fee') monthlyMap[ym].monthlyFee += s.amount;
-        else if (s.type === 'ticket') monthlyMap[ym].ticket += s.amount;
-        else if (s.type === 'other') monthlyMap[ym].other += s.amount;
-        monthlyMap[ym].total += s.amount;
+        if (s.type === 'monthly_fee') monthlyMap[ym].monthlyFee += price;
+        else if (s.type === 'ticket') monthlyMap[ym].ticket += price;
+        else if (s.type === 'other') monthlyMap[ym].other += price;
+        monthlyMap[ym].total += price;
       });
 
       Object.keys(monthlyMap).sort().reverse().forEach(ym => {
@@ -477,7 +504,7 @@ const GolfApp = (function () {
         rows.push([ym, m.monthlyFee, m.ticket, m.other, m.total]);
       });
 
-      downloadCSV(`eXGOLFLAB_月別売上集計_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_月別売上集計_${periodLabel}${taxSuffix}.csv`, rows);
       showToast(`月別売上集計 (${periodLabel}) をCSV出力しました`);
     }
   }
@@ -579,7 +606,6 @@ const GolfApp = (function () {
   // ─── Production Initialization for eXGOLFLAB ───
 
   function generateSampleData() {
-    // Always ensure eXGOLFLAB official coaches are present
     const coaches = DEFAULT_COACHES.map(c => ({
       id: generateId(),
       name: c.name,
@@ -611,14 +637,18 @@ const GolfApp = (function () {
   // ─── Formatting ───
 
   function formatCurrency(amount) {
-    return '¥' + amount.toLocaleString('ja-JP');
+    const isIncl = isTaxInclusiveMode();
+    const finalAmount = isIncl ? calcTaxAmount(amount) : amount;
+    return '¥' + finalAmount.toLocaleString('ja-JP');
   }
 
   function formatCompact(amount) {
-    if (amount >= 10000) {
-      return '¥' + (amount / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+    const isIncl = isTaxInclusiveMode();
+    const finalAmount = isIncl ? calcTaxAmount(amount) : amount;
+    if (finalAmount >= 10000) {
+      return '¥' + (finalAmount / 10000).toFixed(1).replace(/\.0$/, '') + '万';
     }
-    return formatCurrency(amount);
+    return '¥' + finalAmount.toLocaleString('ja-JP');
   }
 
   function formatDate(dateStr) {
@@ -696,20 +726,41 @@ const GolfApp = (function () {
     if (!select) return;
     select.innerHTML = '';
 
-    // Add optional empty prompt for sales menu selector
-    if (selectId === 'salesMenu') {
-      const defaultOpt = document.createElement('option');
-      defaultOpt.value = '';
-      defaultOpt.textContent = 'メニューから選択（自動金額入力）';
-      select.appendChild(defaultOpt);
-    }
+    const isIncl = isTaxInclusiveMode();
 
     getActiveMenus().forEach(menu => {
+      const displayP = isIncl ? calcTaxAmount(menu.price) : menu.price;
       const opt = document.createElement('option');
       opt.value = menu.id;
-      opt.textContent = `${menu.name}（${formatCurrency(menu.price)}）`;
+      opt.textContent = `${menu.name}（${formatCurrency(displayP)}${isIncl ? '税込' : '税別'}）`;
       select.appendChild(opt);
     });
+  }
+
+  // Populate Checkbox Grid for Multi-Menu Selection in Sales Modal
+  function populateSalesMenuCheckboxes(containerId) {
+    const container = document.getElementById(containerId || 'salesMenuCheckboxes');
+    if (!container) return;
+
+    const isIncl = isTaxInclusiveMode();
+    const activeMenus = getActiveMenus();
+
+    container.innerHTML = activeMenus.map(menu => {
+      const netP = menu.price;
+      const inclP = calcTaxAmount(netP);
+      return `
+        <label class="menu-checkbox-card" data-price-net="${netP}" data-price-incl="${inclP}" data-menu-id="${menu.id}" data-menu-name="${menu.name}">
+          <input type="checkbox" name="salesMenuSelect" value="${menu.id}" class="sales-menu-cb">
+          <div class="menu-checkbox-content">
+            <span class="menu-checkbox-name">${menu.name}</span>
+            <span class="menu-checkbox-price">
+              <strong class="price-val">¥${netP.toLocaleString('ja-JP')}</strong>
+              <small class="price-tax-label">（税別 / 税込¥${inclP.toLocaleString('ja-JP')}）</small>
+            </span>
+          </div>
+        </label>
+      `;
+    }).join('');
   }
 
   function populateCoachDropdown(selectId) {
@@ -779,6 +830,12 @@ const GolfApp = (function () {
     PAYMENT_METHODS,
     SALES_TYPES,
     MAX_LESSONS_PER_MONTH,
+    TAX_RATE,
+
+    isTaxInclusiveMode,
+    setTaxInclusiveMode,
+    calcTaxAmount,
+    getDisplayPrice,
 
     generateId,
     getSales, saveSales,
@@ -801,7 +858,8 @@ const GolfApp = (function () {
 
     openModal, closeModal, showToast, setupModalClose,
     populateMonthSelector, getSelectedMonth,
-    populateMenuDropdown, populateCoachDropdown, populateCustomerDatalist,
+    populateMenuDropdown, populateSalesMenuCheckboxes,
+    populateCoachDropdown, populateCustomerDatalist,
     configureChartDefaults,
     generateSampleData,
   };

@@ -27,6 +27,10 @@
     <div class="header-right">
       <select id="monthSelector" class="month-selector" aria-label="表示月を選択"></select>
       <button class="btn btn-outline" id="openExportModalBtn">データ出力 ▾</button>
+      <div class="tax-toggle-group" id="taxToggleGroup" title="表示価格の税別・税込（10%）の切替">
+        <button class="tax-toggle-btn active" id="taxModeExcl">税別</button>
+        <button class="tax-toggle-btn" id="taxModeIncl">税込 (10%)</button>
+      </div>
       <button class="btn btn-primary" id="addSalesBtn">＋ 売上登録</button>
       <button class="btn btn-outline" id="addLessonBtn">＋ レッスン登録</button>
     </div>
@@ -181,16 +185,18 @@
           <input type="text" id="salesCustomer" list="customerDatalist" placeholder="例: 佐藤 健太" autocomplete="off">
         </div>
         <div class="form-group">
+          <label>対象メニュー（複数選択可能）</label>
+          <div class="menu-checkbox-grid" id="salesMenuCheckboxes">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="form-group">
           <label for="salesType">種別</label>
           <select id="salesType" required>
             <option value="monthly_fee">月会費売上</option>
             <option value="ticket">チケット売上</option>
             <option value="other">その他売上（物販・イベント・グリップ交換等）</option>
           </select>
-        </div>
-        <div class="form-group">
-          <label for="salesMenu">メニュー項目（選択すると自動金額入力）</label>
-          <select id="salesMenu"></select>
         </div>
         <div class="form-group">
           <label for="salesPaymentMethod">支払い方法</label>
@@ -202,12 +208,15 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="salesAmount">金額（円）</label>
+          <label for="salesAmount">金額（税別 / 手入力・微調整可能）</label>
           <input type="number" id="salesAmount" min="0" step="100" required placeholder="例: 10000">
+          <div class="sales-live-total" id="salesLiveTotal">
+            選択合計: <strong>税別 ¥0</strong> <small>（税込10% ¥0）</small>
+          </div>
         </div>
         <div class="form-group">
-          <label for="salesDescription">備考・内容</label>
-          <input type="text" id="salesDescription" placeholder="例: グリップ交換代、ボール代など（任意）">
+          <label for="salesDescription">備考・選択メニュー明細</label>
+          <input type="text" id="salesDescription" placeholder="例: 都度払い, 練習利用25分（自動入力されます）">
         </div>
         <button type="submit" class="btn btn-primary btn-full">登録する</button>
       </form>

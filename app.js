@@ -1,5 +1,5 @@
 /* ============================================================
-   eXGOLFLAB — Dashboard Logic (app.js v15 Menu Sales Integration)
+   eXGOLFLAB — Dashboard Logic (app.js v16 Tax & Multi-Menu Integration)
    ============================================================ */
 
 (function () {
@@ -229,34 +229,74 @@
     renderCoachChart(coachStats);
     renderCoachTable(coachStats);
     G.populateCustomerDatalist('customerDatalist');
+    updateTaxToggleUI();
   }
 
-  // ─── Event Handlers ───
+  // ─── Tax Mode Toggle ───
 
-  function handleSalesMenuChange() {
-    const menuId = document.getElementById('salesMenu').value;
-    if (!menuId) return;
+  function updateTaxToggleUI() {
+    const isIncl = G.isTaxInclusiveMode();
+    const btnExcl = document.getElementById('taxModeExcl');
+    const btnIncl = document.getElementById('taxModeIncl');
+    if (btnExcl && btnIncl) {
+      if (isIncl) {
+        btnExcl.classList.remove('active');
+        btnIncl.classList.add('active');
+      } else {
+        btnExcl.classList.add('active');
+        btnIncl.classList.remove('active');
+      }
+    }
+  }
 
-    const menu = G.getMenuById(menuId);
-    if (!menu) return;
+  // ─── Multi-Menu Sales Calculation ───
 
-    // Auto set price
-    document.getElementById('salesAmount').value = menu.price;
+  function updateMultiMenuSalesTotal() {
+    const checkboxes = document.querySelectorAll('input[name="salesMenuSelect"]:checked');
+    let totalNet = 0;
+    const selectedNames = [];
+    let hasMonthly = false;
+    let hasTicket = false;
 
-    // Auto classify sales type
-    const typeSelect = document.getElementById('salesType');
-    if (menu.name.includes('コース') || menu.name.includes('月会費')) {
-      typeSelect.value = 'monthly_fee';
-    } else if (menu.name.includes('チケット') || menu.name.includes('都度払い') || menu.name.includes('法人')) {
-      typeSelect.value = 'ticket';
-    } else {
-      typeSelect.value = 'other';
+    checkboxes.forEach(cb => {
+      const card = cb.closest('.menu-checkbox-card');
+      if (card) {
+        const priceNet = parseInt(card.dataset.priceNet, 10) || 0;
+        const name = card.dataset.menuName;
+        totalNet += priceNet;
+        selectedNames.push(name);
+
+        if (name.includes('コース') || name.includes('月会費')) hasMonthly = true;
+        if (name.includes('チケット') || name.includes('都度払い') || name.includes('法人')) hasTicket = true;
+      }
+    });
+
+    const totalIncl = G.calcTaxAmount(totalNet);
+
+    // Auto set sales amount (Net)
+    const amountInput = document.getElementById('salesAmount');
+    if (amountInput) {
+      amountInput.value = totalNet > 0 ? totalNet : '';
     }
 
-    // Fill description if empty
+    // Auto update live sum badge
+    const liveTotal = document.getElementById('salesLiveTotal');
+    if (liveTotal) {
+      liveTotal.innerHTML = `選択合計: <strong>税別 ¥${totalNet.toLocaleString('ja-JP')}</strong> <small>（税込10% ¥${totalIncl.toLocaleString('ja-JP')}）</small>`;
+    }
+
+    // Auto update sales description
     const descInput = document.getElementById('salesDescription');
-    if (!descInput.value) {
-      descInput.value = menu.name;
+    if (descInput) {
+      descInput.value = selectedNames.join(', ');
+    }
+
+    // Auto update sales type classification
+    const typeSelect = document.getElementById('salesType');
+    if (typeSelect) {
+      if (hasMonthly) typeSelect.value = 'monthly_fee';
+      else if (hasTicket) typeSelect.value = 'ticket';
+      else if (selectedNames.length > 0) typeSelect.value = 'other';
     }
   }
 
@@ -264,7 +304,6 @@
     e.preventDefault();
     const date = document.getElementById('salesDate').value;
     const customerName = document.getElementById('salesCustomer').value.trim();
-    const menuId = document.getElementById('salesMenu').value;
     const type = document.getElementById('salesType').value;
     const paymentMethod = document.getElementById('salesPaymentMethod').value;
     const amount = parseInt(document.getElementById('salesAmount').value, 10);
@@ -276,8 +315,9 @@
       G.saveCustomerName(customerName);
     }
 
-    const menu = menuId ? G.getMenuById(menuId) : null;
-    const menuName = menu ? menu.name : '';
+    const checkboxes = document.querySelectorAll('input[name="salesMenuSelect"]:checked');
+    const selectedMenuIds = Array.from(checkboxes).map(cb => cb.value);
+    const selectedMenuNames = Array.from(checkboxes).map(cb => cb.closest('.menu-checkbox-card')?.dataset.menuName).filter(Boolean);
 
     const sales = G.getSales();
     sales.push({
@@ -286,10 +326,10 @@
       customerName,
       type,
       paymentMethod,
-      amount,
-      menuId: menuId || null,
-      menuName: menuName,
-      description: description || menuName || (type === 'monthly_fee' ? '月会費' : type === 'ticket' ? 'チケット' : 'その他売上'),
+      amount, // Always stored as net price for precision
+      menuIds: selectedMenuIds,
+      menuNames: selectedMenuNames,
+      description: description || selectedMenuNames.join(', ') || (type === 'monthly_fee' ? '月会費' : type === 'ticket' ? 'チケット' : 'その他売上'),
     });
 
     G.saveSales(sales);
@@ -346,7 +386,6 @@
     G.configureChartDefaults();
     G.populateMonthSelector();
     G.populateMenuDropdown('lessonMenu');
-    G.populateMenuDropdown('salesMenu');
     G.populateCoachDropdown('lessonCoach');
     G.populateCustomerDatalist('customerDatalist');
     G.renderHeaderUserBlock();
@@ -356,8 +395,22 @@
 
     document.getElementById('monthSelector')?.addEventListener('change', refreshDashboard);
 
+    // Tax Mode Toggle Handlers
+    document.getElementById('taxModeExcl')?.addEventListener('click', () => {
+      G.setTaxInclusiveMode(false);
+      refreshDashboard();
+    });
+    document.getElementById('taxModeIncl')?.addEventListener('click', () => {
+      G.setTaxInclusiveMode(true);
+      refreshDashboard();
+    });
+
+    // Open Sales Modal Setup
     document.getElementById('openSalesModalBtn')?.addEventListener('click', () => {
-      G.populateMenuDropdown('salesMenu');
+      G.populateSalesMenuCheckboxes('salesMenuCheckboxes');
+      document.querySelectorAll('input[name="salesMenuSelect"]').forEach(cb => {
+        cb.addEventListener('change', updateMultiMenuSalesTotal);
+      });
       G.openModal('salesModal');
     });
 
@@ -365,7 +418,6 @@
     document.getElementById('closeSalesModal')?.addEventListener('click', () => G.closeModal('salesModal'));
     document.getElementById('closeLessonModal')?.addEventListener('click', () => G.closeModal('lessonModal'));
 
-    document.getElementById('salesMenu')?.addEventListener('change', handleSalesMenuChange);
     document.getElementById('salesForm')?.addEventListener('submit', handleSalesSubmit);
     document.getElementById('lessonForm')?.addEventListener('submit', handleLessonSubmit);
 

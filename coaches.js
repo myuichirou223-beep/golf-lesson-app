@@ -381,6 +381,34 @@
     document.getElementById('deleteCoachBtn')?.addEventListener('click', openDeleteConfirm);
     document.getElementById('confirmDeleteBtn')?.addEventListener('click', handleCoachDelete);
 
+    function updateTaxToggleUI() {
+      const isIncl = G.isTaxInclusiveMode();
+      const btnExcl = document.getElementById('taxModeExcl');
+      const btnIncl = document.getElementById('taxModeIncl');
+      if (btnExcl && btnIncl) {
+        if (isIncl) {
+          btnExcl.classList.remove('active');
+          btnIncl.classList.add('active');
+        } else {
+          btnExcl.classList.add('active');
+          btnIncl.classList.remove('active');
+        }
+      }
+    }
+
+    updateTaxToggleUI();
+
+    document.getElementById('taxModeExcl')?.addEventListener('click', () => {
+      G.setTaxInclusiveMode(false);
+      updateTaxToggleUI();
+      refreshAll();
+    });
+    document.getElementById('taxModeIncl')?.addEventListener('click', () => {
+      G.setTaxInclusiveMode(true);
+      updateTaxToggleUI();
+      refreshAll();
+    });
+
     G.setupModalClose();
   }
 
