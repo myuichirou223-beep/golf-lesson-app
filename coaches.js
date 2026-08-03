@@ -241,8 +241,16 @@
     document.getElementById('editLessonCoach').value = lesson.coachName;
 
     G.populateMenuDropdown('editLessonMenu');
-    if (lesson.menuId) {
-      document.getElementById('editLessonMenu').value = lesson.menuId;
+    G.populateCustomerDatalist('customerDatalist');
+
+    const menuSelect = document.getElementById('editLessonMenu');
+    if (menuSelect && lesson.menuName) {
+      const matchOpt = Array.from(menuSelect.options).find(opt => {
+        return opt.value === lesson.menuId || opt.text.startsWith(lesson.menuName);
+      });
+      if (matchOpt) {
+        menuSelect.value = matchOpt.value;
+      }
     }
 
     G.openModal('editLessonModal');

@@ -811,7 +811,8 @@ const GolfApp = (function () {
     select.innerHTML = '';
 
     const isIncl = isTaxInclusiveMode();
-    const menus = selectId === 'lessonMenu' ? getActiveLessonMenus() : getActiveMenus();
+    const isLessonSelect = selectId && selectId.toLowerCase().includes('lesson');
+    const menus = isLessonSelect ? getActiveLessonMenus() : getActiveMenus();
 
     menus.forEach(menu => {
       const displayP = isIncl ? calcTaxAmount(menu.price) : menu.price;
