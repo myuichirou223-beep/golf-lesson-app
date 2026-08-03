@@ -406,15 +406,23 @@
     });
 
     // Open Sales Modal Setup
-    document.getElementById('openSalesModalBtn')?.addEventListener('click', () => {
+    function openSalesModalHandler() {
       G.populateSalesMenuCheckboxes('salesMenuCheckboxes');
       document.querySelectorAll('input[name="salesMenuSelect"]').forEach(cb => {
         cb.addEventListener('change', updateMultiMenuSalesTotal);
       });
       G.openModal('salesModal');
-    });
+    }
 
-    document.getElementById('openLessonModalBtn')?.addEventListener('click', () => G.openModal('lessonModal'));
+    document.getElementById('addSalesBtn')?.addEventListener('click', openSalesModalHandler);
+    document.getElementById('openSalesModalBtn')?.addEventListener('click', openSalesModalHandler);
+
+    function openLessonModalHandler() {
+      G.openModal('lessonModal');
+    }
+
+    document.getElementById('addLessonBtn')?.addEventListener('click', openLessonModalHandler);
+    document.getElementById('openLessonModalBtn')?.addEventListener('click', openLessonModalHandler);
     document.getElementById('closeSalesModal')?.addEventListener('click', () => G.closeModal('salesModal'));
     document.getElementById('closeLessonModal')?.addEventListener('click', () => G.closeModal('lessonModal'));
 
