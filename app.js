@@ -1,70 +1,70 @@
 /* ============================================================
-   Dashboard Page — Logic (v11 with RBAC)
+   eXGOLFLAB — Dashboard Logic (app.js v15 Menu Sales Integration)
    ============================================================ */
 
 (function () {
   'use strict';
 
   const G = GolfApp;
-
   let salesChartInstance = null;
   let coachChartInstance = null;
 
-  // ─── KPI ───
-
-  function updateKPI(cardId, value, changePercent, isMasked) {
-    const card = document.getElementById(cardId);
-    if (!card) return;
-    const valueEl = card.querySelector('.kpi-value');
-    const changeEl = card.querySelector('.kpi-change');
-
-    if (isMasked) {
-      valueEl.textContent = '***';
-      changeEl.textContent = '非表示';
-      changeEl.className = 'kpi-change neutral';
-      return;
-    }
-
-    const isCurrency = ['kpiMonthlyFee', 'kpiTicket', 'kpiOther', 'kpiTotal'].includes(cardId);
-    valueEl.textContent = isCurrency ? G.formatCompact(value) : value;
-
-    if (changePercent === null || changePercent === undefined) {
-      changeEl.textContent = '—';
-      changeEl.className = 'kpi-change neutral';
-    } else if (changePercent > 0) {
-      changeEl.textContent = `↑ ${changePercent}%`;
-      changeEl.className = 'kpi-change positive';
-    } else if (changePercent < 0) {
-      changeEl.textContent = `↓ ${Math.abs(changePercent)}%`;
-      changeEl.className = 'kpi-change negative';
-    } else {
-      changeEl.textContent = '→ 0%';
-      changeEl.className = 'kpi-change neutral';
-    }
-  }
+  // ─── KPI Cards ───
 
   function updateKPICards(year, month, userRole) {
     const isStaff = userRole === 'staff';
-    const current = G.calcMonthlyStats(year, month);
-    const prevDate = new Date(year, month - 1, 1);
-    const previous = G.calcMonthlyStats(prevDate.getFullYear(), prevDate.getMonth());
+    const stats = G.calcMonthlyStats(year, month);
 
-    updateKPI('kpiMonthlyFee', current.monthlyFee, G.calcChange(current.monthlyFee, previous.monthlyFee), isStaff);
-    updateKPI('kpiTicket', current.ticketSales, G.calcChange(current.ticketSales, previous.ticketSales), isStaff);
-    updateKPI('kpiOther', current.otherSales, G.calcChange(current.otherSales, previous.otherSales), isStaff);
-    updateKPI('kpiTotal', current.total, G.calcChange(current.total, previous.total), isStaff);
-    updateKPI('kpiLessons', current.lessonCount, G.calcChange(current.lessonCount, previous.lessonCount), false);
+    const prevMonthDate = new Date(year, month - 1, 1);
+    const prevStats = G.calcMonthlyStats(prevMonthDate.getFullYear(), prevMonthDate.getMonth());
+
+    const totalEl = document.getElementById('kpiTotalSales');
+    const totalChangeEl = document.getElementById('kpiTotalSalesChange');
+    if (totalEl) {
+      totalEl.textContent = isStaff ? '****' : G.formatCurrency(stats.total);
+    }
+    if (totalChangeEl) {
+      if (isStaff) {
+        totalChangeEl.style.display = 'none';
+      } else {
+        const change = G.calcChange(stats.total, prevStats.total);
+        totalChangeEl.style.display = '';
+        totalChangeEl.className = `kpi-change ${change >= 0 ? 'up' : 'down'}`;
+        totalChangeEl.textContent = `${change >= 0 ? '+' : ''}${change}% 前月比`;
+      }
+    }
+
+    const lessonEl = document.getElementById('kpiLessonCount');
+    const lessonChangeEl = document.getElementById('kpiLessonCountChange');
+    if (lessonEl) lessonEl.textContent = `${stats.lessonCount}回`;
+    if (lessonChangeEl) {
+      const change = G.calcChange(stats.lessonCount, prevStats.lessonCount);
+      lessonChangeEl.className = `kpi-change ${change >= 0 ? 'up' : 'down'}`;
+      lessonChangeEl.textContent = `${change >= 0 ? '+' : ''}${change}% 前月比`;
+    }
+
+    const coachEl = document.getElementById('kpiActiveCoaches');
+    if (coachEl) coachEl.textContent = `${stats.coachCount}名`;
+
+    const revEl = document.getElementById('kpiEstimatedRevenue');
+    if (revEl) {
+      revEl.textContent = isStaff ? '****' : G.formatCurrency(stats.lessonRevenue);
+    }
   }
 
-  // ─── Charts ───
+  // ─── Charts & Tables ───
 
   function renderSalesChart(trend, isStaff) {
     const ctx = document.getElementById('salesChart');
     if (!ctx) return;
+
     if (salesChartInstance) salesChartInstance.destroy();
 
     if (isStaff) {
-      ctx.parentElement.innerHTML = `<h2 class="card-title">売上推移</h2><div class="empty-state"><div class="empty-state-text">閲覧権限が制限されています</div></div>`;
+      const parent = ctx.parentElement;
+      if (parent) {
+        parent.innerHTML = '<div class="empty-state"><div class="empty-state-text">店舗アカウントでは売上グラフは非表示です</div></div>';
+      }
       return;
     }
 
@@ -76,7 +76,7 @@
           {
             label: '月会費',
             data: trend.map(t => t.monthlyFee),
-            backgroundColor: '#333333',
+            backgroundColor: '#111111',
             borderRadius: 4,
             borderSkipped: false,
             barPercentage: 0.7,
@@ -141,16 +141,18 @@
           backgroundColor: colors,
           borderRadius: 4,
           borderSkipped: false,
-          barPercentage: 0.6,
+          barPercentage: 0.5,
         }],
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: true,
-        indexAxis: 'y',
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: ctx => ctx.parsed.x + '回' } },
+          tooltip: {
+            callbacks: { label: ctx => `実施回数: ${ctx.parsed.x}回` },
+          },
         },
         scales: {
           x: { beginAtZero: true, ticks: { stepSize: 5 } },
@@ -160,22 +162,21 @@
     });
   }
 
-  // ─── Tables ───
-
   function renderCoachTable(coachStats) {
     const tbody = document.querySelector('#coachTable tbody');
     if (!tbody) return;
 
     const entries = Object.entries(coachStats).sort((a, b) => b[1].lessonCount - a[1].lessonCount);
-
-    if (entries.length === 0 || entries.every(([, s]) => s.lessonCount === 0)) {
-      tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-state-text">この月のレッスンデータはありません</div></div></td></tr>`;
+    if (entries.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-state-text">データがありません</div></div></td></tr>`;
       return;
     }
 
+    const maxCount = Math.max(...entries.map(([, s]) => s.lessonCount), 1);
+
     tbody.innerHTML = entries.map(([name, stats]) => {
-      const utilization = Math.min(Math.round((stats.lessonCount / G.MAX_LESSONS_PER_MONTH) * 100), 100);
-      const isHigh = utilization >= 70;
+      const utilization = Math.round((stats.lessonCount / G.MAX_LESSONS_PER_MONTH) * 100);
+      const isHigh = stats.lessonCount === maxCount;
       return `
         <tr>
           <td><div class="coach-name-cell"><div class="coach-avatar">${name.charAt(0)}</div>${name}</div></td>
@@ -232,19 +233,51 @@
 
   // ─── Event Handlers ───
 
+  function handleSalesMenuChange() {
+    const menuId = document.getElementById('salesMenu').value;
+    if (!menuId) return;
+
+    const menu = G.getMenuById(menuId);
+    if (!menu) return;
+
+    // Auto set price
+    document.getElementById('salesAmount').value = menu.price;
+
+    // Auto classify sales type
+    const typeSelect = document.getElementById('salesType');
+    if (menu.name.includes('コース') || menu.name.includes('月会費')) {
+      typeSelect.value = 'monthly_fee';
+    } else if (menu.name.includes('チケット') || menu.name.includes('都度払い') || menu.name.includes('法人')) {
+      typeSelect.value = 'ticket';
+    } else {
+      typeSelect.value = 'other';
+    }
+
+    // Fill description if empty
+    const descInput = document.getElementById('salesDescription');
+    if (!descInput.value) {
+      descInput.value = menu.name;
+    }
+  }
+
   function handleSalesSubmit(e) {
     e.preventDefault();
     const date = document.getElementById('salesDate').value;
     const customerName = document.getElementById('salesCustomer').value.trim();
+    const menuId = document.getElementById('salesMenu').value;
     const type = document.getElementById('salesType').value;
     const paymentMethod = document.getElementById('salesPaymentMethod').value;
     const amount = parseInt(document.getElementById('salesAmount').value, 10);
     const description = document.getElementById('salesDescription').value;
+
     if (!date || !type || !paymentMethod || isNaN(amount) || amount <= 0) return;
 
     if (customerName) {
       G.saveCustomerName(customerName);
     }
+
+    const menu = menuId ? G.getMenuById(menuId) : null;
+    const menuName = menu ? menu.name : '';
 
     const sales = G.getSales();
     sales.push({
@@ -254,8 +287,11 @@
       type,
       paymentMethod,
       amount,
-      description: description || (type === 'monthly_fee' ? '月会費' : type === 'ticket' ? 'チケット' : 'その他売上'),
+      menuId: menuId || null,
+      menuName: menuName,
+      description: description || menuName || (type === 'monthly_fee' ? '月会費' : type === 'ticket' ? 'チケット' : 'その他売上'),
     });
+
     G.saveSales(sales);
     G.closeModal('salesModal');
     e.target.reset();
@@ -309,28 +345,30 @@
     G.generateSampleData();
     G.configureChartDefaults();
     G.populateMonthSelector();
-    G.populateCoachDropdown();
-    G.populateMenuDropdown();
+    G.populateMenuDropdown('lessonMenu');
+    G.populateMenuDropdown('salesMenu');
+    G.populateCoachDropdown('lessonCoach');
     G.populateCustomerDatalist('customerDatalist');
     G.renderHeaderUserBlock();
+    G.setupExportModalHandler();
 
     refreshDashboard();
 
-    G.setupExportModalHandler();
-
     document.getElementById('monthSelector')?.addEventListener('change', refreshDashboard);
-    document.getElementById('addSalesBtn')?.addEventListener('click', () => {
-      G.populateCustomerDatalist('customerDatalist');
+
+    document.getElementById('openSalesModalBtn')?.addEventListener('click', () => {
+      G.populateMenuDropdown('salesMenu');
       G.openModal('salesModal');
     });
-    document.getElementById('addLessonBtn')?.addEventListener('click', () => {
-      G.populateCustomerDatalist('customerDatalist');
-      G.openModal('lessonModal');
-    });
+
+    document.getElementById('openLessonModalBtn')?.addEventListener('click', () => G.openModal('lessonModal'));
     document.getElementById('closeSalesModal')?.addEventListener('click', () => G.closeModal('salesModal'));
     document.getElementById('closeLessonModal')?.addEventListener('click', () => G.closeModal('lessonModal'));
+
+    document.getElementById('salesMenu')?.addEventListener('change', handleSalesMenuChange);
     document.getElementById('salesForm')?.addEventListener('submit', handleSalesSubmit);
     document.getElementById('lessonForm')?.addEventListener('submit', handleLessonSubmit);
+
     G.setupModalClose();
   }
 

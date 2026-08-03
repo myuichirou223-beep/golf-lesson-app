@@ -189,6 +189,10 @@
           </select>
         </div>
         <div class="form-group">
+          <label for="salesMenu">メニュー項目（選択すると自動金額入力）</label>
+          <select id="salesMenu"></select>
+        </div>
+        <div class="form-group">
           <label for="salesPaymentMethod">支払い方法</label>
           <select id="salesPaymentMethod" required>
             <option value="cash">現金</option>
@@ -199,7 +203,7 @@
         </div>
         <div class="form-group">
           <label for="salesAmount">金額（円）</label>
-          <input type="number" id="salesAmount" min="0" step="100" required placeholder="例: 50000">
+          <input type="number" id="salesAmount" min="0" step="100" required placeholder="例: 10000">
         </div>
         <div class="form-group">
           <label for="salesDescription">備考・内容</label>

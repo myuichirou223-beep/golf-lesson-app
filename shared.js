@@ -1,21 +1,9 @@
 /* ============================================================
-   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v14 Production)
-   ============================================================
-   Completely isolated keys for production. All legacy demo keys purged.
+   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v15 Updated Prices)
    ============================================================ */
 
 const GolfApp = (function () {
   'use strict';
-
-  // Completely purge legacy demo keys from browser LocalStorage
-  try {
-    const legacyKeys = [
-      'golf_app_sales', 'golf_app_lessons', 'golf_app_coaches',
-      'golf_app_menus', 'golf_app_customers', 'golf_app_initialized',
-      'golf_app_initialized_v7', 'golf_app_initialized_exgolf_v1'
-    ];
-    legacyKeys.forEach(k => localStorage.removeItem(k));
-  } catch (e) {}
 
   // ─── Production Keys ───
 
@@ -23,9 +11,9 @@ const GolfApp = (function () {
     SALES: 'exgolflab_sales_prod_v1',
     LESSONS: 'exgolflab_lessons_prod_v1',
     COACHES: 'exgolflab_coaches_prod_v1',
-    MENUS: 'exgolflab_menus_prod_v1',
+    MENUS: 'exgolflab_menus_prod_v2',
     CUSTOMERS: 'exgolflab_customers_prod_v1',
-    INITIALIZED: 'exgolflab_initialized_prod_v1',
+    INITIALIZED: 'exgolflab_initialized_prod_v2',
   };
 
   const MAX_LESSONS_PER_MONTH = 40;
@@ -43,22 +31,23 @@ const GolfApp = (function () {
     other: 'その他売上',
   };
 
+  // Official Menus & Exact Price Structure for eXGOLFLAB
   const DEFAULT_MENUS = [
-    { name: '練習利用25分', price: 1430 },
-    { name: '練習利用50分', price: 2200 },
-    { name: '都度払い', price: 10000 },
-    { name: '5回チケット', price: 6800 },
-    { name: '10回チケット', price: 6500 },
-    { name: '20回チケット', price: 6000 },
-    { name: '月1回コース', price: 8000 },
-    { name: '月2回コース', price: 6000 },
-    { name: '法人30', price: 6500 },
-    { name: '法人60', price: 6000 },
+    { name: '都度払い（1回）', price: 10000 },
+    { name: '5回チケット', price: 34000 },
+    { name: '10回チケット', price: 65000 },
+    { name: '20回チケット', price: 120000 },
+    { name: '月1回コース', price: 17100 }, // 当月8000+次月8000+初期1000+システム100
+    { name: '月2回コース', price: 25100 }, // 当月12000+次月12000+初期1000+システム100
+    { name: '法人30', price: 195000 },
+    { name: '法人60', price: 360000 },
+    { name: '練習利用25分', price: 1300 },
+    { name: '練習利用50分', price: 2000 },
   ];
 
   // Official Coaches for eXGOLFLAB
   const DEFAULT_COACHES = [
-    { name: '宮國 雄一朗', specialties: ['都度払い', '5回チケット', '10回チケット'], bio: 'ヘッドコーチ' },
+    { name: '宮國 雄一朗', specialties: ['都度払い（1回）', '5回チケット', '10回チケット'], bio: 'ヘッドコーチ' },
     { name: '与那覇 未来', specialties: ['月1回コース', '月2回コース', '20回チケット'], bio: 'インストラクター' },
   ];
 
@@ -139,22 +128,38 @@ const GolfApp = (function () {
 
   // Menus
   function getMenus() {
-    const menus = getData(STORAGE_KEYS.MENUS);
-    let updated = false;
-    DEFAULT_MENUS.forEach(defM => {
-      if (!menus.some(m => m.name === defM.name && m.active)) {
-        menus.push({
-          id: generateId(),
-          name: defM.name,
-          price: defM.price,
-          active: true,
-          createdAt: new Date().toISOString().split('T')[0],
-        });
-        updated = true;
-      }
-    });
-    if (updated) {
+    let menus = getData(STORAGE_KEYS.MENUS);
+    // Auto update to default menus if empty or v2 initialization
+    if (!localStorage.getItem(STORAGE_KEYS.INITIALIZED) || menus.length === 0) {
+      menus = DEFAULT_MENUS.map(m => ({
+        id: generateId(),
+        name: m.name,
+        price: m.price,
+        active: true,
+        createdAt: new Date().toISOString().split('T')[0],
+      }));
       saveMenus(menus);
+      localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+    } else {
+      let updated = false;
+      DEFAULT_MENUS.forEach(defM => {
+        const existing = menus.find(m => m.name === defM.name);
+        if (!existing) {
+          menus.push({
+            id: generateId(),
+            name: defM.name,
+            price: defM.price,
+            active: true,
+            createdAt: new Date().toISOString().split('T')[0],
+          });
+          updated = true;
+        } else if (existing.price !== defM.price && existing.active) {
+          // Update price to new structure if matched
+          existing.price = defM.price;
+          updated = true;
+        }
+      });
+      if (updated) saveMenus(menus);
     }
     return menus;
   }
@@ -402,13 +407,14 @@ const GolfApp = (function () {
     }
 
     if (dataType === 'sales') {
-      const headers = ['日付', '顧客名', '売上種別', '支払い方法', '金額(円)', '備考'];
+      const headers = ['日付', '顧客名', '売上種別', '対象メニュー', '支払い方法', '金額(円)', '備考'];
       const rows = [headers];
       filteredSales.sort((a, b) => b.date.localeCompare(a.date)).forEach(s => {
         rows.push([
           s.date,
           s.customerName || '',
           SALES_TYPES[s.type] || s.type,
+          s.menuName || '',
           PAYMENT_METHODS[s.paymentMethod] || s.paymentMethod || '',
           s.amount,
           s.description || '',
@@ -570,7 +576,7 @@ const GolfApp = (function () {
     }
   }
 
-  // ─── Production Clean State Initialization for eXGOLFLAB ───
+  // ─── Production Initialization for eXGOLFLAB ───
 
   function generateSampleData() {
     // Always ensure eXGOLFLAB official coaches are present
@@ -584,19 +590,10 @@ const GolfApp = (function () {
     }));
     saveCoaches(coaches);
 
+    getMenus();
+
     if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
 
-    // Create menus master
-    const menus = DEFAULT_MENUS.map(m => ({
-      id: generateId(),
-      name: m.name,
-      price: m.price,
-      active: true,
-      createdAt: new Date().toISOString().split('T')[0],
-    }));
-    saveMenus(menus);
-
-    // Guaranteed empty transactions for fresh production start
     saveSales([]);
     saveLessons([]);
     setData(STORAGE_KEYS.CUSTOMERS, []);
@@ -698,6 +695,15 @@ const GolfApp = (function () {
     const select = document.getElementById(selectId || 'lessonMenu');
     if (!select) return;
     select.innerHTML = '';
+
+    // Add optional empty prompt for sales menu selector
+    if (selectId === 'salesMenu') {
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = 'メニューから選択（自動金額入力）';
+      select.appendChild(defaultOpt);
+    }
+
     getActiveMenus().forEach(menu => {
       const opt = document.createElement('option');
       opt.value = menu.id;
