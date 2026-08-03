@@ -363,7 +363,7 @@
 
     if (!date || !startTime || !endTime || !coachName || !menuId) return;
 
-    const menu = G.getMenuById(menuId);
+    const menu = G.getLessonMenuById(menuId) || G.getMenuById(menuId);
     if (!menu) return;
 
     if (customerName) {

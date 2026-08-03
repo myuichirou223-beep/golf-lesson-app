@@ -1,5 +1,5 @@
 /* ============================================================
-   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v17 Practice Type)
+   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v18 Lesson Prices & Trial)
    ============================================================ */
 
 const GolfApp = (function () {
@@ -11,9 +11,10 @@ const GolfApp = (function () {
     SALES: 'exgolflab_sales_prod_v1',
     LESSONS: 'exgolflab_lessons_prod_v1',
     COACHES: 'exgolflab_coaches_prod_v1',
-    MENUS: 'exgolflab_menus_prod_v2',
+    MENUS: 'exgolflab_menus_prod_v3',
+    LESSON_MENUS: 'exgolflab_lesson_menus_prod_v3',
     CUSTOMERS: 'exgolflab_customers_prod_v1',
-    INITIALIZED: 'exgolflab_initialized_prod_v2',
+    INITIALIZED: 'exgolflab_initialized_prod_v3',
     TAX_MODE: 'exgolflab_tax_mode_v1',
   };
 
@@ -31,11 +32,11 @@ const GolfApp = (function () {
     monthly_fee: '月会費売上',
     ticket: 'チケット売上',
     practice: '練習利用売上',
-    other: 'その他売上',
+    other: 'その他売上（体験レッスン等含む）',
   };
 
-  // Official Menus (Tax-exclusive Net Prices) for eXGOLFLAB
-  const DEFAULT_MENUS = [
+  // Sales Registration Menus (Total Gross Amount for Sales Purchase)
+  const DEFAULT_SALES_MENUS = [
     { name: '都度払い（1回）', price: 10000 },
     { name: '5回チケット', price: 34000 },
     { name: '10回チケット', price: 65000 },
@@ -46,12 +47,30 @@ const GolfApp = (function () {
     { name: '法人60', price: 360000 },
     { name: '練習利用25分', price: 1300 },
     { name: '練習利用50分', price: 2000 },
+    { name: '体験レッスン', price: 3000 },
+    { name: '体験レッスン（入会サービス）', price: 0 },
+  ];
+
+  // Lesson Performance Menus (Per-lesson valuation price for Coach Stats)
+  const DEFAULT_LESSON_MENUS = [
+    { name: '都度払い（1回）', price: 10000 },
+    { name: '5回チケット', price: 6800 },
+    { name: '10回チケット', price: 6500 },
+    { name: '20回チケット', price: 6000 },
+    { name: '月1回コース', price: 8000 },
+    { name: '月2回コース', price: 6000 },
+    { name: '法人30', price: 6500 },
+    { name: '法人60', price: 6000 },
+    { name: '練習利用25分', price: 1430 },
+    { name: '練習利用50分', price: 2200 },
+    { name: '体験レッスン', price: 3000 },
+    { name: '体験レッスン（入会サービス）', price: 0 },
   ];
 
   // Official Coaches for eXGOLFLAB
   const DEFAULT_COACHES = [
-    { name: '宮國 雄一朗', specialties: ['都度払い（1回）', '5回チケット', '10回チケット'], bio: 'ヘッドコーチ' },
-    { name: '与那覇 未来', specialties: ['月1回コース', '月2回コース', '20回チケット'], bio: 'インストラクター' },
+    { name: '宮國 雄一朗', specialties: ['都度払い（1回）', '5回チケット', '10回チケット', '体験レッスン'], bio: 'ヘッドコーチ' },
+    { name: '与那覇 未来', specialties: ['月1回コース', '月2回コース', '20回チケット', '体験レッスン'], bio: 'インストラクター' },
   ];
 
   // ─── Tax Mode Helper ───
@@ -147,11 +166,11 @@ const GolfApp = (function () {
     return true;
   }
 
-  // Menus
+  // Sales Menus
   function getMenus() {
     let menus = getData(STORAGE_KEYS.MENUS);
     if (!localStorage.getItem(STORAGE_KEYS.INITIALIZED) || menus.length === 0) {
-      menus = DEFAULT_MENUS.map(m => ({
+      menus = DEFAULT_SALES_MENUS.map(m => ({
         id: generateId(),
         name: m.name,
         price: m.price,
@@ -162,7 +181,7 @@ const GolfApp = (function () {
       localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
     } else {
       let updated = false;
-      DEFAULT_MENUS.forEach(defM => {
+      DEFAULT_SALES_MENUS.forEach(defM => {
         const existing = menus.find(m => m.name === defM.name);
         if (!existing) {
           menus.push({
@@ -190,6 +209,50 @@ const GolfApp = (function () {
 
   function getMenuById(id) {
     return getMenus().find(m => m.id === id) || null;
+  }
+
+  // Lesson Performance Menus (Per-lesson unit prices)
+  function getLessonMenus() {
+    let menus = getData(STORAGE_KEYS.LESSON_MENUS);
+    if (menus.length === 0) {
+      menus = DEFAULT_LESSON_MENUS.map(m => ({
+        id: generateId(),
+        name: m.name,
+        price: m.price,
+        active: true,
+        createdAt: new Date().toISOString().split('T')[0],
+      }));
+      saveLessonMenus(menus);
+    } else {
+      let updated = false;
+      DEFAULT_LESSON_MENUS.forEach(defM => {
+        const existing = menus.find(m => m.name === defM.name);
+        if (!existing) {
+          menus.push({
+            id: generateId(),
+            name: defM.name,
+            price: defM.price,
+            active: true,
+            createdAt: new Date().toISOString().split('T')[0],
+          });
+          updated = true;
+        } else if (existing.price !== defM.price && existing.active) {
+          existing.price = defM.price;
+          updated = true;
+        }
+      });
+      if (updated) saveLessonMenus(menus);
+    }
+    return menus;
+  }
+  function saveLessonMenus(data) { setData(STORAGE_KEYS.LESSON_MENUS, data); }
+
+  function getActiveLessonMenus() {
+    return getLessonMenus().filter(m => m.active);
+  }
+
+  function getLessonMenuById(id) {
+    return getLessonMenus().find(m => m.id === id) || null;
   }
 
   function addMenu(name, price) {
@@ -621,6 +684,7 @@ const GolfApp = (function () {
     saveCoaches(coaches);
 
     getMenus();
+    getLessonMenus();
 
     if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
 
@@ -732,7 +796,10 @@ const GolfApp = (function () {
 
     const isIncl = isTaxInclusiveMode();
 
-    getActiveMenus().forEach(menu => {
+    // If populating lessonMenu, use getActiveLessonMenus (per-lesson unit prices)
+    const menus = selectId === 'lessonMenu' ? getActiveLessonMenus() : getActiveMenus();
+
+    menus.forEach(menu => {
       const displayP = isIncl ? calcTaxAmount(menu.price) : menu.price;
       const opt = document.createElement('option');
       opt.value = menu.id;
@@ -847,6 +914,7 @@ const GolfApp = (function () {
     getCoaches, saveCoaches, getCoachNames, getCoachById,
     addCoach, updateCoach, deleteCoach,
     getMenus, saveMenus, getActiveMenus, getMenuById,
+    getLessonMenus, saveLessonMenus, getActiveLessonMenus, getLessonMenuById,
     addMenu, updateMenu, deleteMenu,
     getSavedCustomers, saveCustomerName, getCustomerNames,
 
