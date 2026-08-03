@@ -137,6 +137,25 @@ const GolfApp = (function () {
   function getLessons() { return getData(STORAGE_KEYS.LESSONS); }
   function saveLessons(data) { setData(STORAGE_KEYS.LESSONS, data); }
 
+  function getLessonById(id) {
+    return getLessons().find(l => l.id === id) || null;
+  }
+
+  function updateLessons(id, updates) {
+    const lessons = getLessons();
+    const index = lessons.findIndex(l => l.id === id);
+    if (index === -1) return false;
+    lessons[index] = { ...lessons[index], ...updates };
+    saveLessons(lessons);
+    return true;
+  }
+
+  function deleteLessons(id) {
+    const lessons = getLessons().filter(l => l.id !== id);
+    saveLessons(lessons);
+    return true;
+  }
+
   // Coaches
   function getCoaches() { return getData(STORAGE_KEYS.COACHES); }
   function saveCoaches(data) { setData(STORAGE_KEYS.COACHES, data); }
@@ -905,7 +924,7 @@ const GolfApp = (function () {
 
     generateId,
     getSales, saveSales, getSalesById, updateSales, deleteSales,
-    getLessons, saveLessons,
+    getLessons, saveLessons, getLessonById, updateLessons, deleteLessons,
     getCoaches, saveCoaches, getCoachNames, getCoachById,
     addCoach, updateCoach, deleteCoach,
     getMenus, saveMenus, getActiveMenus, getMenuById,

@@ -112,6 +112,7 @@
                 <th>顧客名</th>
                 <th>メニュー</th>
                 <th class="text-right">単価</th>
+                <th class="text-center" style="width: 110px;">操作</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -240,6 +241,46 @@
           <button class="btn btn-danger" id="confirmDeleteBtn">削除する</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== Edit Lesson Modal ===== -->
+  <div class="modal-overlay" id="editLessonModal" role="dialog" aria-modal="true" aria-labelledby="editLessonModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="editLessonModalTitle">レッスン実績の編集</h3>
+        <button class="modal-close" id="closeEditLessonModal" aria-label="閉じる">&times;</button>
+      </div>
+      <form id="editLessonForm" class="modal-form">
+        <input type="hidden" id="editLessonId">
+        <div class="form-group">
+          <label for="editLessonDate">日付</label>
+          <input type="date" id="editLessonDate" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editLessonStartTime">開始時間</label>
+            <input type="time" id="editLessonStartTime" required>
+          </div>
+          <div class="form-group">
+            <label for="editLessonEndTime">終了時間</label>
+            <input type="time" id="editLessonEndTime" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="editLessonCustomer">顧客名</label>
+          <input type="text" id="editLessonCustomer" list="customerDatalist" placeholder="例: 田中 裕子" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="editLessonCoach">担当コーチ</label>
+          <select id="editLessonCoach" required></select>
+        </div>
+        <div class="form-group">
+          <label for="editLessonMenu">メニュー</label>
+          <select id="editLessonMenu" required></select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">変更を保存する</button>
+      </form>
     </div>
   </div>
 

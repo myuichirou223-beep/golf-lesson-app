@@ -227,6 +227,64 @@
 
   // ─── Lesson History ───
 
+  function openEditLessonModal(id) {
+    const lesson = G.getLessonById(id);
+    if (!lesson) return;
+
+    document.getElementById('editLessonId').value = lesson.id;
+    document.getElementById('editLessonDate').value = lesson.date;
+    document.getElementById('editLessonStartTime').value = lesson.startTime || '10:00';
+    document.getElementById('editLessonEndTime').value = lesson.endTime || '11:00';
+    document.getElementById('editLessonCustomer').value = lesson.customerName || '';
+
+    G.populateCoachDropdown('editLessonCoach');
+    document.getElementById('editLessonCoach').value = lesson.coachName;
+
+    G.populateMenuDropdown('editLessonMenu');
+    if (lesson.menuId) {
+      document.getElementById('editLessonMenu').value = lesson.menuId;
+    }
+
+    G.openModal('editLessonModal');
+  }
+
+  function handleLessonEdit(e) {
+    e.preventDefault();
+    const id = document.getElementById('editLessonId').value;
+    const date = document.getElementById('editLessonDate').value;
+    const startTime = document.getElementById('editLessonStartTime').value;
+    const endTime = document.getElementById('editLessonEndTime').value;
+    const customerName = document.getElementById('editLessonCustomer').value.trim();
+    const coachName = document.getElementById('editLessonCoach').value;
+    const menuSelect = document.getElementById('editLessonMenu');
+    const menuId = menuSelect?.value;
+
+    if (!id || !date || !coachName) return;
+
+    let menu = G.getLessonMenuById(menuId) || G.getMenuById(menuId);
+    let menuName = menu ? menu.name : (menuSelect ? menuSelect.options[menuSelect.selectedIndex]?.text.split('（')[0] : 'レッスン');
+    let menuPrice = menu ? menu.price : 0;
+
+    if (customerName) {
+      G.saveCustomerName(customerName);
+    }
+
+    G.updateLessons(id, {
+      date,
+      startTime,
+      endTime,
+      customerName,
+      coachName,
+      menuId: menu ? menu.id : id,
+      menuName,
+      menuPrice,
+    });
+
+    G.closeModal('editLessonModal');
+    refreshAll();
+    G.showToast('レッスン実績を更新しました');
+  }
+
   function renderLessonHistory(coachName, year, month) {
     const tbody = document.querySelector('#lessonHistoryTable tbody');
     const countEl = document.getElementById('lessonHistoryCount');
@@ -236,7 +294,7 @@
     if (countEl) countEl.textContent = `${history.length}件`;
 
     if (history.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-text">この月のレッスン履歴はありません</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-text">この月のレッスン履歴はありません</div></div></td></tr>`;
       return;
     }
 
@@ -247,8 +305,26 @@
         <td>${l.customerName || '—'}</td>
         <td><span class="lesson-type-badge">${l.menuName || '—'}</span></td>
         <td class="text-right">${G.formatCurrency(l.menuPrice || 0)}</td>
+        <td class="text-center">
+          <button class="btn btn-outline btn-xs edit-lesson-btn" data-id="${l.id}">編集</button>
+          <button class="btn btn-outline btn-xs delete-lesson-btn" data-id="${l.id}" style="color:#C62828; border-color:#FFCDD2;">削除</button>
+        </td>
       </tr>
     `).join('');
+
+    tbody.querySelectorAll('.edit-lesson-btn').forEach(btn => {
+      btn.addEventListener('click', () => openEditLessonModal(btn.dataset.id));
+    });
+
+    tbody.querySelectorAll('.delete-lesson-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (confirm('このレッスン実績を削除してもよろしいですか？')) {
+          G.deleteLessons(btn.dataset.id);
+          refreshAll();
+          G.showToast('レッスン実績を削除しました');
+        }
+      });
+    });
   }
 
   // ─── Coach Registration ───
@@ -372,11 +448,13 @@
     });
     document.getElementById('closeCoachModal')?.addEventListener('click', () => G.closeModal('coachModal'));
     document.getElementById('closeEditCoachModal')?.addEventListener('click', () => G.closeModal('editCoachModal'));
+    document.getElementById('closeEditLessonModal')?.addEventListener('click', () => G.closeModal('editLessonModal'));
     document.getElementById('closeDeleteModal')?.addEventListener('click', () => G.closeModal('deleteConfirmModal'));
     document.getElementById('cancelDeleteBtn')?.addEventListener('click', () => G.closeModal('deleteConfirmModal'));
 
     document.getElementById('coachForm')?.addEventListener('submit', handleCoachRegister);
     document.getElementById('editCoachForm')?.addEventListener('submit', handleCoachEdit);
+    document.getElementById('editLessonForm')?.addEventListener('submit', handleLessonEdit);
     document.getElementById('editCoachBtn')?.addEventListener('click', openEditModal);
     document.getElementById('deleteCoachBtn')?.addEventListener('click', openDeleteConfirm);
     document.getElementById('confirmDeleteBtn')?.addEventListener('click', handleCoachDelete);
