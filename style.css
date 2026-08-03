@@ -1591,8 +1591,30 @@ body {
 /* ─── Tablet & iPad (<= 1024px) ─── */
 @media (max-width: 1024px) {
   .header {
+    flex-wrap: wrap;
     padding: 10px 16px;
-    gap: var(--space-xs);
+    gap: 10px;
+  }
+
+  .header-left {
+    order: 1;
+  }
+
+  .header-nav {
+    order: 2;
+  }
+
+  .header-user-box {
+    order: 3;
+    margin-left: auto;
+  }
+
+  .header-right {
+    order: 4;
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .dashboard {
@@ -1613,6 +1635,17 @@ body {
 
 /* ─── Mobile (<= 768px) ─── */
 @media (max-width: 768px) {
+  .header-right {
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 2px;
+  }
+
+  .header-right .btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
   .kpi-section {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-xs);
