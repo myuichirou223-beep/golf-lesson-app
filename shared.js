@@ -1,28 +1,31 @@
 /* ============================================================
-   eXGOLFLAB — Shared Data Layer & Utilities (shared.js)
+   eXGOLFLAB — Shared Data Layer & Utilities (shared.js v14 Production)
+   ============================================================
+   Completely isolated keys for production. All legacy demo keys purged.
    ============================================================ */
 
 const GolfApp = (function () {
   'use strict';
 
-  // Hard Wipe All Old Browser LocalStorage Cache Immediately
+  // Completely purge legacy demo keys from browser LocalStorage
   try {
-    if (!localStorage.getItem('exgolf_hard_wipe_executed_v999')) {
-      localStorage.clear();
-      localStorage.setItem('exgolf_hard_wipe_executed_v999', 'true');
-    }
+    const legacyKeys = [
+      'golf_app_sales', 'golf_app_lessons', 'golf_app_coaches',
+      'golf_app_menus', 'golf_app_customers', 'golf_app_initialized',
+      'golf_app_initialized_v7', 'golf_app_initialized_exgolf_v1'
+    ];
+    legacyKeys.forEach(k => localStorage.removeItem(k));
   } catch (e) {}
 
-  // ─── Constants ───
+  // ─── Production Keys ───
 
   const STORAGE_KEYS = {
-    SALES: 'golf_app_sales',
-    LESSONS: 'golf_app_lessons',
-    COACHES: 'golf_app_coaches',
-    MENUS: 'golf_app_menus',
-    CUSTOMERS: 'golf_app_customers',
-    INITIALIZED: 'golf_app_initialized_exgolf_v1',
-    FORCE_CLEAN: 'golf_app_force_clean_exgolf_v1',
+    SALES: 'exgolflab_sales_prod_v1',
+    LESSONS: 'exgolflab_lessons_prod_v1',
+    COACHES: 'exgolflab_coaches_prod_v1',
+    MENUS: 'exgolflab_menus_prod_v1',
+    CUSTOMERS: 'exgolflab_customers_prod_v1',
+    INITIALIZED: 'exgolflab_initialized_prod_v1',
   };
 
   const MAX_LESSONS_PER_MONTH = 40;
@@ -570,18 +573,6 @@ const GolfApp = (function () {
   // ─── Production Clean State Initialization for eXGOLFLAB ───
 
   function generateSampleData() {
-    // If eXGOLFLAB force clean has not run on this browser yet, wipe ALL sales, lessons, coaches and customers
-    if (!localStorage.getItem(STORAGE_KEYS.FORCE_CLEAN)) {
-      localStorage.removeItem(STORAGE_KEYS.SALES);
-      localStorage.removeItem(STORAGE_KEYS.LESSONS);
-      localStorage.removeItem(STORAGE_KEYS.COACHES);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
-      saveSales([]);
-      saveLessons([]);
-      setData(STORAGE_KEYS.CUSTOMERS, []);
-      localStorage.setItem(STORAGE_KEYS.FORCE_CLEAN, 'true');
-    }
-
     // Always ensure eXGOLFLAB official coaches are present
     const coaches = DEFAULT_COACHES.map(c => ({
       id: generateId(),
@@ -605,6 +596,7 @@ const GolfApp = (function () {
     }));
     saveMenus(menus);
 
+    // Guaranteed empty transactions for fresh production start
     saveSales([]);
     saveLessons([]);
     setData(STORAGE_KEYS.CUSTOMERS, []);
@@ -613,11 +605,9 @@ const GolfApp = (function () {
   }
 
   function clearAllData() {
-    localStorage.clear();
     saveSales([]);
     saveLessons([]);
     setData(STORAGE_KEYS.CUSTOMERS, []);
-    localStorage.setItem('exgolf_hard_wipe_executed_v999', 'true');
     generateSampleData();
   }
 
