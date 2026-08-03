@@ -355,16 +355,21 @@
   function handleLessonSubmit(e) {
     e.preventDefault();
     const date = document.getElementById('lessonDate').value;
-    const startTime = document.getElementById('lessonStartTime').value;
-    const endTime = document.getElementById('lessonEndTime').value;
+    const startTime = document.getElementById('lessonStartTime').value || '10:00';
+    const endTime = document.getElementById('lessonEndTime').value || '11:00';
     const customerName = document.getElementById('lessonCustomer').value.trim();
     const coachName = document.getElementById('lessonCoach').value;
-    const menuId = document.getElementById('lessonMenu').value;
+    const menuSelect = document.getElementById('lessonMenu');
+    const menuId = menuSelect?.value;
 
-    if (!date || !startTime || !endTime || !coachName || !menuId) return;
+    if (!date || !coachName) {
+      alert('日付とコーチを選択してください');
+      return;
+    }
 
-    const menu = G.getLessonMenuById(menuId) || G.getMenuById(menuId);
-    if (!menu) return;
+    let menu = G.getLessonMenuById(menuId) || G.getMenuById(menuId);
+    let menuName = menu ? menu.name : (menuSelect ? menuSelect.options[menuSelect.selectedIndex]?.text.split('（')[0] : 'レッスン');
+    let menuPrice = menu ? menu.price : 0;
 
     if (customerName) {
       G.saveCustomerName(customerName);
@@ -378,15 +383,16 @@
       endTime,
       customerName,
       coachName,
-      menuId: menu.id,
-      menuName: menu.name,
-      menuPrice: menu.price,
+      menuId: menu ? menu.id : G.generateId(),
+      menuName,
+      menuPrice,
     });
+
     G.saveLessons(lessons);
     G.closeModal('lessonModal');
     e.target.reset();
     refreshDashboard();
-    G.showToast('レッスンを登録しました');
+    G.showToast('レッスン実績を登録しました');
   }
 
   // ─── Init ───
@@ -431,6 +437,8 @@
     document.getElementById('openSalesModalBtn')?.addEventListener('click', openSalesModalHandler);
 
     function openLessonModalHandler() {
+      G.populateMenuDropdown('lessonMenu');
+      G.populateCoachDropdown('lessonCoach');
       G.openModal('lessonModal');
     }
 
