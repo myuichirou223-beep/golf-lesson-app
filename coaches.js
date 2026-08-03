@@ -271,7 +271,7 @@
 
     let menu = G.getLessonMenuById(menuId) || G.getMenuById(menuId);
     let menuName = menu ? menu.name : (menuSelect ? menuSelect.options[menuSelect.selectedIndex]?.text.split('（')[0] : 'レッスン');
-    let menuPrice = menu ? menu.price : 0;
+    let menuPrice = G.getLessonMenuUnitPrice(menuId, menuName);
 
     if (customerName) {
       G.saveCustomerName(customerName);
@@ -306,19 +306,21 @@
       return;
     }
 
-    tbody.innerHTML = history.map(l => `
-      <tr>
-        <td>${G.formatDate(l.date)}</td>
-        <td>${G.formatTimeRange(l.startTime, l.endTime)}</td>
-        <td>${l.customerName || '—'}</td>
-        <td><span class="lesson-type-badge">${l.menuName || '—'}</span></td>
-        <td class="text-right">${G.formatCurrency(l.menuPrice || 0)}</td>
-        <td class="text-center">
-          <button class="btn btn-outline btn-xs edit-lesson-btn" data-id="${l.id}">編集</button>
-          <button class="btn btn-outline btn-xs delete-lesson-btn" data-id="${l.id}" style="color:#C62828; border-color:#FFCDD2;">削除</button>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = history.map(l => {
+      const priceVal = (l.menuPrice && l.menuPrice > 0) ? l.menuPrice : G.getLessonMenuUnitPrice(l.menuId, l.menuName);
+      return `
+        <tr>
+          <td>${G.formatDate(l.date)}</td>
+          <td>${G.formatTimeRange(l.startTime, l.endTime)}</td>
+          <td>${l.customerName || '—'}</td>
+          <td><span class="lesson-type-badge">${l.menuName || '—'}</span></td>
+          <td class="text-right">${G.formatCurrency(priceVal)}</td>
+          <td class="text-center">
+            <button class="btn btn-outline btn-xs edit-lesson-btn" data-id="${l.id}">編集</button>
+            <button class="btn btn-outline btn-xs delete-lesson-btn" data-id="${l.id}" style="color:#C62828; border-color:#FFCDD2;">削除</button>
+          </td>
+        </tr>`;
+    }).join('');
 
     tbody.querySelectorAll('.edit-lesson-btn').forEach(btn => {
       btn.addEventListener('click', () => openEditLessonModal(btn.dataset.id));

@@ -271,6 +271,17 @@ const GolfApp = (function () {
     return getLessonMenus().find(m => m.id === id) || null;
   }
 
+  function getLessonMenuUnitPrice(menuId, menuName) {
+    const menu = getLessonMenuById(menuId) || getMenuById(menuId);
+    if (menu && menu.price > 0) return menu.price;
+
+    if (menuName) {
+      const found = DEFAULT_LESSON_MENUS.find(m => menuName.includes(m.name) || m.name.includes(menuName));
+      if (found) return found.price;
+    }
+    return 0;
+  }
+
   function addMenu(name, price) {
     const menus = getMenus();
     if (menus.some(m => m.name === name && m.active)) {
@@ -354,7 +365,10 @@ const GolfApp = (function () {
     const practiceSales = sales.filter(s => s.type === 'practice').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
     const otherSales = sales.filter(s => s.type === 'other').reduce((sum, s) => sum + (isIncl ? calcTaxAmount(s.amount) : s.amount), 0);
     const uniqueCoaches = new Set(lessons.map(l => l.coachName));
-    const lessonRevenue = lessons.reduce((sum, l) => sum + (isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0)), 0);
+    const lessonRevenue = lessons.reduce((sum, l) => {
+      const p = (l.menuPrice && l.menuPrice > 0) ? l.menuPrice : getLessonMenuUnitPrice(l.menuId, l.menuName);
+      return sum + (isIncl ? calcTaxAmount(p) : p);
+    }, 0);
 
     return {
       monthlyFee,
@@ -382,7 +396,8 @@ const GolfApp = (function () {
         stats[l.coachName] = { lessonCount: 0, revenue: 0 };
       }
       stats[l.coachName].lessonCount++;
-      const price = isIncl ? calcTaxAmount(l.menuPrice || 0) : (l.menuPrice || 0);
+      const basePrice = (l.menuPrice && l.menuPrice > 0) ? l.menuPrice : getLessonMenuUnitPrice(l.menuId, l.menuName);
+      const price = isIncl ? calcTaxAmount(basePrice) : basePrice;
       stats[l.coachName].revenue += price;
     });
 
@@ -929,7 +944,7 @@ const GolfApp = (function () {
     getCoaches, saveCoaches, getCoachNames, getCoachById,
     addCoach, updateCoach, deleteCoach,
     getMenus, saveMenus, getActiveMenus, getMenuById,
-    getLessonMenus, saveLessonMenus, getActiveLessonMenus, getLessonMenuById,
+    getLessonMenus, saveLessonMenus, getActiveLessonMenus, getLessonMenuById, getLessonMenuUnitPrice,
     addMenu, updateMenu, deleteMenu,
     getSavedCustomers, saveCustomerName, getCustomerNames,
 

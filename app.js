@@ -467,7 +467,7 @@
 
     let menu = G.getLessonMenuById(menuId) || G.getMenuById(menuId);
     let menuName = menu ? menu.name : (menuSelect ? menuSelect.options[menuSelect.selectedIndex]?.text.split('（')[0] : 'レッスン');
-    let menuPrice = menu ? menu.price : 0;
+    let menuPrice = G.getLessonMenuUnitPrice(menuId, menuName);
 
     if (customerName) {
       G.saveCustomerName(customerName);
