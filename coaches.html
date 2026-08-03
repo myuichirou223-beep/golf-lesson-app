@@ -16,14 +16,16 @@
 
   <!-- ===== Header ===== -->
   <header class="header">
-    <div class="header-left">
-      <h1>eXGOLFLAB 実績管理</h1>
+    <div class="header-left-group">
+      <div class="header-left">
+        <h1>eXGOLFLAB 実績管理</h1>
+      </div>
+      <nav class="header-nav">
+        <a href="index.html" class="nav-link">ダッシュボード</a>
+        <a href="coaches.html" class="nav-link active">コーチ管理</a>
+        <a href="settings.html" class="nav-link">設定</a>
+      </nav>
     </div>
-    <nav class="header-nav">
-      <a href="index.html" class="nav-link">ダッシュボード</a>
-      <a href="coaches.html" class="nav-link active">コーチ管理</a>
-      <a href="settings.html" class="nav-link">設定</a>
-    </nav>
     <div class="header-right">
       <select id="monthSelector" class="month-selector" aria-label="表示月を選択"></select>
       <button class="btn btn-outline" id="openExportModalBtn">データ出力 ▾</button>

@@ -1583,3 +1583,153 @@ body {
   color: var(--primary);
   font-size: 0.9375rem;
 }
+
+/* ============================================================
+   Responsive Design & Mobile Optimization
+   ============================================================ */
+
+/* ─── Tablet & iPad (<= 1024px) ─── */
+@media (max-width: 1024px) {
+  .header {
+    padding: 10px 16px;
+    gap: var(--space-xs);
+  }
+
+  .header-left h1 {
+    font-size: 1.05rem;
+  }
+
+  .nav-link {
+    padding: 5px 10px;
+    font-size: 0.78125rem;
+  }
+
+  .btn {
+    padding: 7px 12px;
+    font-size: 0.78125rem;
+  }
+
+  .dashboard {
+    padding: var(--space-md);
+  }
+
+  .kpi-section {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+
+  .charts-section,
+  .tables-section {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+}
+
+/* ─── Mobile & iPhone (<= 768px) ─── */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 12px;
+    gap: 8px;
+    position: relative;
+  }
+
+  .header-left-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .header-right .month-selector {
+    flex: 1;
+    min-width: 110px;
+  }
+
+  .tax-toggle-group {
+    flex-shrink: 0;
+  }
+
+  .header-right .btn {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .header-user-box {
+    border-left: none;
+    padding-left: 0;
+    margin-left: 0;
+  }
+
+  .kpi-section {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xs);
+  }
+
+  .kpi-card {
+    padding: var(--space-md);
+  }
+
+  .kpi-value {
+    font-size: 1.25rem;
+  }
+
+  .chart-card,
+  .table-card {
+    padding: var(--space-md);
+  }
+
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal {
+    width: 95%;
+    max-width: 100%;
+    padding: var(--space-md);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .menu-checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Small Mobile (<= 480px) ─── */
+@media (max-width: 480px) {
+  .kpi-section {
+    grid-template-columns: 1fr;
+  }
+
+  .header-left h1 {
+    font-size: 0.95rem;
+  }
+
+  .nav-link {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .header-right .btn {
+    padding: 5px 8px;
+    font-size: 0.71875rem;
+  }
+}
