@@ -1,7 +1,5 @@
 /* ============================================================
-   Golf Lesson App — Shared Data Layer & Utilities (v13 Forced Clean State)
-   ============================================================
-   Completely wipes all historical demo data across all client browsers.
+   eXGOLFLAB — Shared Data Layer & Utilities (shared.js)
    ============================================================ */
 
 const GolfApp = (function () {
@@ -15,8 +13,8 @@ const GolfApp = (function () {
     COACHES: 'golf_app_coaches',
     MENUS: 'golf_app_menus',
     CUSTOMERS: 'golf_app_customers',
-    INITIALIZED: 'golf_app_initialized_prod_v1',
-    FORCE_CLEAN: 'golf_app_force_clean_v10',
+    INITIALIZED: 'golf_app_initialized_exgolf_v1',
+    FORCE_CLEAN: 'golf_app_force_clean_exgolf_v1',
   };
 
   const MAX_LESSONS_PER_MONTH = 40;
@@ -47,12 +45,10 @@ const GolfApp = (function () {
     { name: '法人60', price: 6000 },
   ];
 
+  // Official Coaches for eXGOLFLAB
   const DEFAULT_COACHES = [
-    { name: '沢田 健一', specialties: ['都度払い', '5回チケット'], bio: 'PGA公認ティーチングプロ' },
-    { name: '比嘉 真由美', specialties: ['月1回コース', '月2回コース'], bio: 'ジュニア育成に注力' },
-    { name: '金城 大輔', specialties: ['10回チケット', '法人30'], bio: '初心者指導が得意' },
-    { name: '宮城 あゆみ', specialties: ['月2回コース', '5回チケット'], bio: 'レディースレッスン担当' },
-    { name: '上原 拓也', specialties: ['法人60', '20回チケット'], bio: 'コースマネジメント指導' },
+    { name: '宮國 雄一朗', specialties: ['都度払い', '5回チケット', '10回チケット'], bio: 'ヘッドコーチ' },
+    { name: '与那覇 未来', specialties: ['月1回コース', '月2回コース', '20回チケット'], bio: 'インストラクター' },
   ];
 
   // ─── Data Layer ───
@@ -407,7 +403,7 @@ const GolfApp = (function () {
           s.description || '',
         ]);
       });
-      downloadCSV(`売上明細_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_売上明細_${periodLabel}.csv`, rows);
       showToast(`売上明細 (${periodLabel}) をCSV出力しました`);
 
     } else if (dataType === 'lessons') {
@@ -424,7 +420,7 @@ const GolfApp = (function () {
           l.menuPrice || 0,
         ]);
       });
-      downloadCSV(`レッスン実績_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_レッスン実績_${periodLabel}.csv`, rows);
       showToast(`レッスン実績 (${periodLabel}) をCSV出力しました`);
 
     } else if (dataType === 'coach_summary') {
@@ -442,7 +438,7 @@ const GolfApp = (function () {
       Object.entries(coachMap).forEach(([name, data]) => {
         rows.push([name, data.count, data.revenue]);
       });
-      downloadCSV(`コーチ別集計_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_コーチ別集計_${periodLabel}.csv`, rows);
       showToast(`コーチ別集計 (${periodLabel}) をCSV出力しました`);
 
     } else if (dataType === 'monthly_summary') {
@@ -464,7 +460,7 @@ const GolfApp = (function () {
         rows.push([ym, m.monthlyFee, m.ticket, m.other, m.total]);
       });
 
-      downloadCSV(`月別売上集計_${periodLabel}.csv`, rows);
+      downloadCSV(`eXGOLFLAB_月別売上集計_${periodLabel}.csv`, rows);
       showToast(`月別売上集計 (${periodLabel}) をCSV出力しました`);
     }
   }
@@ -563,19 +559,31 @@ const GolfApp = (function () {
     }
   }
 
-  // ─── Forced Clean Reset for Production ───
+  // ─── Production Clean State Initialization for eXGOLFLAB ───
 
   function generateSampleData() {
-    // If forced clean has not run on this browser yet, wipe ALL sales, lessons, and customers
+    // If eXGOLFLAB force clean has not run on this browser yet, wipe ALL sales, lessons, coaches and customers
     if (!localStorage.getItem(STORAGE_KEYS.FORCE_CLEAN)) {
       localStorage.removeItem(STORAGE_KEYS.SALES);
       localStorage.removeItem(STORAGE_KEYS.LESSONS);
+      localStorage.removeItem(STORAGE_KEYS.COACHES);
       localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
       saveSales([]);
       saveLessons([]);
       setData(STORAGE_KEYS.CUSTOMERS, []);
       localStorage.setItem(STORAGE_KEYS.FORCE_CLEAN, 'true');
     }
+
+    // Always ensure eXGOLFLAB official coaches are present
+    const coaches = DEFAULT_COACHES.map(c => ({
+      id: generateId(),
+      name: c.name,
+      specialties: c.specialties,
+      bio: c.bio,
+      registeredAt: new Date().toISOString().split('T')[0],
+      active: true,
+    }));
+    saveCoaches(coaches);
 
     if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
 
@@ -589,18 +597,6 @@ const GolfApp = (function () {
     }));
     saveMenus(menus);
 
-    // Create coaches master
-    const coaches = DEFAULT_COACHES.map(c => ({
-      id: generateId(),
-      name: c.name,
-      specialties: c.specialties,
-      bio: c.bio,
-      registeredAt: new Date().toISOString().split('T')[0],
-      active: true,
-    }));
-    saveCoaches(coaches);
-
-    // Empty transactions
     saveSales([]);
     saveLessons([]);
     setData(STORAGE_KEYS.CUSTOMERS, []);
