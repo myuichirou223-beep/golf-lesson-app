@@ -562,8 +562,8 @@ const GolfApp = (function () {
 
     // Insert User Badge in Header
     if (headerRight && !document.getElementById('headerUserBox')) {
-      const badgeText = user.role === 'admin' ? '管理者' : user.role === 'staff' ? 'スタッフ' : 'コーチ';
-      const badgeClass = user.role === 'admin' ? 'badge-admin' : user.role === 'staff' ? 'badge-staff' : 'badge-coach';
+      const badgeText = user.role === 'admin' ? '管理者' : '店舗';
+      const badgeClass = user.role === 'admin' ? 'badge-admin' : 'badge-staff';
 
       const userBox = document.createElement('div');
       userBox.id = 'headerUserBox';

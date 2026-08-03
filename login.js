@@ -11,8 +11,8 @@
 
     const demoUsers = CloudAuth.getDemoUsers();
     container.innerHTML = demoUsers.map(u => {
-      const badgeText = u.role === 'admin' ? '管理者' : u.role === 'staff' ? 'スタッフ' : 'コーチ';
-      const badgeClass = u.role === 'admin' ? 'badge-admin' : u.role === 'staff' ? 'badge-staff' : 'badge-coach';
+      const badgeText = u.role === 'admin' ? '1. 管理者' : '2. 店舗';
+      const badgeClass = u.role === 'admin' ? 'badge-admin' : 'badge-staff';
       return `
         <button type="button" class="demo-btn" data-email="${u.email}" data-pass="${u.password}">
           <div class="demo-btn-left">
@@ -44,23 +44,13 @@
       return;
     }
 
-    // Redirect based on role
-    if (result.user.role === 'coach') {
-      window.location.href = 'coaches.html';
-    } else {
-      window.location.href = 'index.html';
-    }
+    window.location.href = 'index.html';
   }
 
   function init() {
-    // If already logged in, redirect
     const currentUser = CloudAuth.getCurrentUser();
     if (currentUser) {
-      if (currentUser.role === 'coach') {
-        window.location.href = 'coaches.html';
-      } else {
-        window.location.href = 'index.html';
-      }
+      window.location.href = 'index.html';
       return;
     }
 

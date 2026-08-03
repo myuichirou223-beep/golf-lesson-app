@@ -1,8 +1,5 @@
 /* ============================================================
    Golf Lesson App — Cloud & Auth Integration Layer (cloud.js)
-   ============================================================
-   Handles authentication, session persistence, role-based access
-   control (RBAC), and cloud synchronization with Supabase/Firebase.
    ============================================================ */
 
 const CloudAuth = (function () {
@@ -11,39 +8,23 @@ const CloudAuth = (function () {
   const SESSION_KEY = 'golf_app_session';
   const CONFIG_KEY = 'golf_app_cloud_config';
 
-  // Preset demo accounts for seamless multi-device testing & evaluation
+  // Simplified to 2 main roles: 1. 管理者 (admin), 2. 店舗 (shop)
   const DEMO_USERS = [
     {
       id: 'usr_admin',
       email: 'admin@golf.local',
       password: 'password123',
-      name: '管理者（店舗オーナー）',
-      role: 'admin', // admin: Full access to sales, KPIs, settings, export, all coaches
+      name: '管理者（オーナー・責任者）',
+      role: 'admin', // Full access to sales, KPIs, summaries, exports, settings
       coachName: null,
     },
     {
-      id: 'usr_staff',
-      email: 'staff@golf.local',
+      id: 'usr_shop',
+      email: 'shop@golf.local',
       password: 'password123',
-      name: 'フロントスタッフ',
-      role: 'staff', // staff: Can register sales & lessons, view schedule. Cannot view total financial KPIs/settings
+      name: '店舗（現場・受付用）',
+      role: 'shop', // Input sales & lessons, view schedules & coach counts
       coachName: null,
-    },
-    {
-      id: 'usr_sawada',
-      email: 'sawada@golf.local',
-      password: 'password123',
-      name: '沢田 健一 コーチ',
-      role: 'coach', // coach: Can view and manage only their own lessons & personal KPIs
-      coachName: '沢田 健一',
-    },
-    {
-      id: 'usr_higa',
-      email: 'higa@golf.local',
-      password: 'password123',
-      name: '比嘉 真由美 コーチ',
-      role: 'coach',
-      coachName: '比嘉 真由美',
     },
   ];
 
@@ -96,11 +77,7 @@ const CloudAuth = (function () {
     }
     if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
       alert('このページにアクセスする権限がありません。');
-      if (user.role === 'coach') {
-        window.location.href = 'coaches.html';
-      } else {
-        window.location.href = 'index.html';
-      }
+      window.location.href = 'index.html';
       return null;
     }
     return user;
@@ -116,8 +93,6 @@ const CloudAuth = (function () {
     }));
   }
 
-  // ─── Cloud Config (Supabase / Firebase Endpoint) ───
-
   function getCloudConfig() {
     try {
       const raw = localStorage.getItem(CONFIG_KEY);
@@ -130,8 +105,6 @@ const CloudAuth = (function () {
   function saveCloudConfig(config) {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
   }
-
-  // ─── Public API ───
 
   return {
     getCurrentUser,

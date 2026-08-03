@@ -337,7 +337,7 @@
   // ─── Init ───
 
   function init() {
-    const currentUser = CloudAuth.requireAuth(['admin', 'staff', 'coach']);
+    const currentUser = CloudAuth.requireAuth(['admin', 'shop']);
     if (!currentUser) return;
 
     G.generateSampleData();
