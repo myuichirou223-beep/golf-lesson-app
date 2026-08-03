@@ -223,6 +223,38 @@
     }).join('');
   }
 
+  function renderSalesDetailTable(year, month, isStaff) {
+    const tbody = document.querySelector('#salesDetailTable tbody');
+    if (!tbody) return;
+
+    if (isStaff) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-text">店舗アカウントでは売上明細は非表示です</div></div></td></tr>`;
+      return;
+    }
+
+    const allSales = G.getSales();
+    const monthlySales = G.filterByMonth(allSales, year, month)
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    if (monthlySales.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-text">選択月の売上データがまだ登録されていません</div></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = monthlySales.map(s => {
+      const menuText = s.menuName || s.menuNames?.join(', ') || s.description || '—';
+      const payText = G.PAYMENT_METHODS[s.paymentMethod] || s.paymentMethod || '—';
+      return `
+        <tr>
+          <td>${G.formatFullDate(s.date)}</td>
+          <td><strong>${s.customerName || '未指定'}</strong></td>
+          <td>${menuText}</td>
+          <td><span class="role-badge badge-staff">${payText}</span></td>
+          <td class="text-right highlight-value">${G.formatCurrency(s.amount)}</td>
+        </tr>`;
+    }).join('');
+  }
+
   // ─── Refresh ───
 
   function refreshDashboard() {
@@ -235,6 +267,7 @@
     const trend = G.getSalesTrend(year, month, 6);
     renderSalesChart(trend, isStaff);
     renderSalesTable(trend, isStaff);
+    renderSalesDetailTable(year, month, isStaff);
     const coachStats = G.calcCoachStats(year, month);
     renderCoachChart(coachStats);
     renderCoachTable(coachStats);
