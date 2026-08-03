@@ -323,6 +323,107 @@
     });
   }
 
+  // ─── Calendar Render ───
+
+  function renderCalendar(year, month, isStaff) {
+    const gridBody = document.getElementById('calendarGridBody');
+    const titleEl = document.getElementById('calendarTitle');
+    if (!gridBody) return;
+
+    if (titleEl) {
+      titleEl.textContent = `${year}年${month + 1}月 月間カレンダー（日別実績）`;
+    }
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = firstDay.getDay(); // 0:Sun ~ 6:Sat
+    const totalDays = lastDay.getDate();
+
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+    const allSales = G.getSales();
+    const allLessons = G.getLessons();
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    let cellsHtml = '';
+
+    // Previous month padding cells
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const prevDate = prevMonthLastDay - i;
+      cellsHtml += `
+        <div class="cal-cell other-month">
+          <div class="cal-date-row">
+            <span class="cal-date-num">${prevDate}</span>
+          </div>
+        </div>`;
+    }
+
+    // Current month cells
+    for (let d = 1; d <= totalDays; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayOfWeek = new Date(year, month, d).getDay();
+      const dayClass = dayOfWeek === 0 ? 'sun' : dayOfWeek === 6 ? 'sat' : '';
+      const isToday = dateStr === todayStr ? 'today' : '';
+
+      // Sales for this day
+      const daySales = allSales.filter(s => s.date === dateStr);
+      const daySalesTotal = daySales.reduce((sum, s) => sum + s.amount, 0);
+
+      // Lessons for this day
+      const dayLessons = allLessons.filter(l => l.date === dateStr);
+      const dayLessonsCount = dayLessons.length;
+
+      let badgesHtml = '';
+      if (!isStaff && daySalesTotal > 0) {
+        badgesHtml += `<span class="cal-badge-sales" title="売上: ${G.formatCurrency(daySalesTotal)}">${G.formatCurrency(daySalesTotal)}</span>`;
+      }
+      if (dayLessonsCount > 0) {
+        badgesHtml += `<span class="cal-badge-lessons" title="レッスン: ${dayLessonsCount}件">レッスン ${dayLessonsCount}件</span>`;
+      }
+
+      cellsHtml += `
+        <div class="cal-cell ${dayClass} ${isToday}" data-date="${dateStr}">
+          <div class="cal-date-row">
+            <span class="cal-date-num">${d}</span>
+          </div>
+          <div class="cal-badges">
+            ${badgesHtml}
+          </div>
+        </div>`;
+    }
+
+    // Next month padding cells to complete 7-column grid
+    const totalFilled = startDayOfWeek + totalDays;
+    const nextPadding = (7 - (totalFilled % 7)) % 7;
+    for (let i = 1; i <= nextPadding; i++) {
+      cellsHtml += `
+        <div class="cal-cell other-month">
+          <div class="cal-date-row">
+            <span class="cal-date-num">${i}</span>
+          </div>
+        </div>`;
+    }
+
+    gridBody.innerHTML = cellsHtml;
+
+    // Click event for day cells
+    gridBody.querySelectorAll('.cal-cell:not(.other-month)').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const dateStr = cell.dataset.date;
+        const daySales = allSales.filter(s => s.date === dateStr);
+        const dayLessons = allLessons.filter(l => l.date === dateStr);
+        const dayTotal = daySales.reduce((sum, s) => sum + s.amount, 0);
+
+        let msg = `${dateStr} の実績:\n`;
+        msg += `・売上合計: ${isStaff ? '非表示' : G.formatCurrency(dayTotal)} (${daySales.length}件)\n`;
+        msg += `・レッスン実施: ${dayLessons.length}件`;
+        alert(msg);
+      });
+    });
+  }
+
   // ─── Refresh ───
 
   function refreshDashboard() {
@@ -336,6 +437,7 @@
     renderSalesChart(trend, isStaff);
     renderSalesTable(trend, isStaff);
     renderSalesDetailTable(year, month, isStaff);
+    renderCalendar(year, month, isStaff);
     const coachStats = G.calcCoachStats(year, month);
     renderCoachChart(coachStats);
     renderCoachTable(coachStats);
